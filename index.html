@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>What Should We Play?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pine:#1B3A32; --pine-deep:#142B25; --parchment:#F3ECD9; --parchment-dim:#E7DCBE;
+    --ink:#221F1A; --ink-soft:rgba(34,31,26,0.62); --brass:#C99A3B; --brass-bright:#E0B355;
+    --garnet:#A6402F; --slate:#3D6A82; --lavender:#7A6CA8; --line:rgba(34,31,26,0.14);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background-color: var(--pine);
+    background-image: radial-gradient(circle at 15% -10%, rgba(255,255,255,0.05), transparent 45%), radial-gradient(circle at 100% 90%, rgba(0,0,0,0.18), transparent 50%);
+    color: var(--parchment); font-family:'Inter','Noto Sans TC', sans-serif; min-height:100vh;
+    padding: 40px 20px 70px; line-height:1.55;
+  }
+  .wrap{ max-width:1180px; margin:0 auto; position:relative; }
+
+  .lang-toggle{
+    position:fixed; top:18px; right:18px; background: rgba(243,236,217,0.12); border:1px solid rgba(243,236,217,0.35);
+    color: var(--parchment); font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.05em;
+    border-radius:999px; padding:8px 16px; cursor:pointer; z-index:60; backdrop-filter: blur(4px); transition: background .15s;
+  }
+  .lang-toggle:hover{ background: rgba(243,236,217,0.24); }
+  .lang-toggle:focus-visible{ outline:2px solid var(--brass-bright); outline-offset:2px; }
+  @media (max-width:600px){ .lang-toggle{ top:12px; right:12px; padding:6px 12px; font-size:11px; } }
+
+  .site-header{ margin-bottom:28px; }
+  .eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color: var(--brass-bright); margin:0 0 14px; }
+  h1.title{ font-family:'Fraunces', serif; font-style:italic; font-weight:500; font-size: clamp(32px, 5vw, 54px); line-height:1.1; margin:0 0 14px; color: var(--parchment); max-width: 16ch; }
+  html[lang="zh-Hant"] h1.title{ font-style:normal; font-family:'Noto Sans TC','Fraunces',serif; font-weight:700; }
+  .subtitle{ max-width:620px; color: rgba(243,236,217,0.78); font-size:16px; margin:0; }
+
+  .layout{ display:grid; grid-template-columns: 320px 1fr; gap:28px; align-items:start; }
+  @media (max-width:900px){
+    body{ padding: 60px 16px 70px; }
+    .layout{ grid-template-columns: 1fr; }
+    .controls{ position:static !important; }
+    .site-header{ text-align:center; }
+    h1.title{ max-width:100%; }
+    .subtitle{ margin:0 auto; text-align:center; }
+    .results{ display:flex; flex-direction:column; align-items:center; }
+    .deck-header{ width:100%; max-width:420px; justify-content:space-between; }
+    .swipe-area{ width:100%; align-items:center; }
+    .swipe-stack{ width:min(380px, calc(100vw - 32px)); height:min(380px, calc(100vw - 32px)); }
+    .swipe-card{ padding:20px 18px 16px; }
+    .ai-section{ width:100%; max-width:420px; }
+    .empty-state, .end-state{ max-width:min(380px, calc(100vw - 32px)); }
+  }
+  @media (max-width:480px){
+    .swipe-stack{ height:min(340px, calc(100vw - 32px)); }
+    .sc-title{ font-size:20px; }
+    .sc-tag{ font-size:13px; }
+  }
+
+  .panel-head{ display:flex; align-items:baseline; gap:10px; margin-bottom:16px; }
+  .panel-num{ font-family:'IBM Plex Mono', monospace; font-size:13px; color: var(--brass-bright); border:1px solid rgba(224,179,85,0.45); border-radius:999px; width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .panel-title{ font-family:'Fraunces', serif; font-weight:600; font-size:20px; color: var(--parchment); margin:0; }
+  .panel-title.dark{ color: var(--ink); }
+  .panel-num.dark{ color: var(--garnet); border-color: rgba(166,64,47,0.4); }
+
+  .controls{ position:sticky; top:22px; background: var(--parchment); color: var(--ink); border-radius:16px; padding:22px 22px 24px; box-shadow: 0 22px 50px rgba(0,0,0,0.28); }
+  .control-section{ padding:16px 0; border-top:1px solid var(--line); }
+  .control-section:first-of-type{ border-top:none; padding-top:0; }
+  .control-label{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color: var(--ink-soft); margin:0 0 12px; }
+
+  .stepper{ display:flex; align-items:center; gap:16px; justify-content:center; }
+  .step-btn{ width:38px; height:38px; border-radius:50%; border:1.5px solid var(--ink); background: var(--parchment); color: var(--ink); font-size:18px; font-family:'Inter', sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background .15s, transform .1s; }
+  .step-btn:hover{ background: var(--brass-bright); border-color: var(--brass-bright); }
+  .step-btn:active{ transform: scale(0.92); }
+  .step-btn:focus-visible{ outline:2px solid var(--garnet); outline-offset:2px; }
+  .step-btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  .player-count{ font-family:'Fraunces', serif; font-weight:600; font-size:32px; min-width:48px; text-align:center; }
+
+  .chip-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{ display:flex; align-items:center; gap:7px; border:1.5px solid var(--line); background: transparent; color: var(--ink); border-radius:999px; padding:7px 12px 7px 9px; font-family:'Inter', sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition: all .15s; }
+  .chip svg{ width:16px; height:16px; flex-shrink:0; }
+  .chip:hover{ border-color: var(--brass); }
+  .chip.active{ background: var(--ink); border-color: var(--ink); color: var(--parchment); }
+  .chip:focus-visible{ outline:2px solid var(--garnet); outline-offset:2px; }
+
+  .vibe-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .vibe-pill{ border:1.5px solid var(--line); background:transparent; border-radius:999px; padding:7px 14px; font-size:13px; font-weight:600; font-family:'Inter','Noto Sans TC', sans-serif; cursor:pointer; color: var(--ink); transition: all .15s; }
+  .vibe-pill:focus-visible{ outline:2px solid var(--garnet); outline-offset:2px; }
+  .vibe-pill[data-vibe="party"].active{ background: var(--brass); border-color: var(--brass); color: var(--ink); }
+  .vibe-pill[data-vibe="family"].active{ background: var(--slate); border-color: var(--slate); color: #fff; }
+  .vibe-pill[data-vibe="icebreaker"].active{ background: var(--lavender); border-color: var(--lavender); color: #fff; }
+  .vibe-pill[data-vibe="drinking"].active{ background: var(--garnet); border-color: var(--garnet); color: #fff; }
+
+  .reset-link{ background:none; border:none; font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:0.06em; text-transform:uppercase; color: var(--ink-soft); text-decoration:underline; cursor:pointer; padding:0; margin-top:14px; }
+  .reset-link:hover{ color: var(--garnet); }
+
+  /* ---------- choose screen ---------- */
+  .choose-screen{ }
+  .choose-panel-head{ display:flex; align-items:baseline; gap:10px; margin-bottom:20px; }
+  .choose-options{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:560px){ .choose-options{ grid-template-columns:1fr; } }
+  .choose-card{
+    background: rgba(243,236,217,0.08); border:1px solid rgba(243,236,217,0.2); border-radius:14px;
+    padding:22px 18px 20px; cursor:pointer; transition: background .15s, border-color .15s, transform .12s;
+    text-align:left; color: var(--parchment);
+  }
+  .choose-card:hover{ background: rgba(243,236,217,0.14); border-color: rgba(243,236,217,0.45); }
+  .choose-card:active{ transform: scale(0.97); }
+  .choose-card:focus-visible{ outline:2px solid var(--brass-bright); outline-offset:3px; }
+  .choose-card.ai{ border-color: rgba(122,108,168,0.6); }
+  .choose-card.ai:hover{ border-color: var(--lavender); background: rgba(122,108,168,0.15); }
+  .choose-card-icon{ font-size:32px; margin-bottom:12px; }
+  .choose-card-title{ font-family:'Fraunces','Noto Sans TC',serif; font-weight:600; font-size:18px; margin:0 0 8px; }
+  .choose-card-desc{ font-size:13px; color: rgba(243,236,217,0.7); margin:0 0 14px; line-height:1.5; }
+  .choose-card-hint{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.06em; color: rgba(243,236,217,0.45); }
+
+  /* ---------- browse screen ---------- */
+  .browse-back{ background:none; border:none; font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:0.06em; text-transform:uppercase; color: rgba(243,236,217,0.55); text-decoration:none; cursor:pointer; padding:0; margin-bottom:18px; display:flex; align-items:center; gap:6px; }
+  .browse-back:hover{ color: var(--brass-bright); }
+
+  /* ---------- story share modal ---------- */
+  .level-tabs{ display:flex; gap:8px; margin-bottom:16px; }
+  .level-tab{ flex:1; padding:9px 6px; border-radius:8px; border:1.5px solid var(--line); background:transparent; font-family:'Inter','Noto Sans TC',sans-serif; font-size:13px; font-weight:600; cursor:pointer; color: var(--ink); transition: all .15s; }
+  .level-tab.active.light{ background: var(--slate); border-color: var(--slate); color:#fff; }
+  .level-tab.active.personal{ background: var(--lavender); border-color: var(--lavender); color:#fff; }
+  .level-tab.active.deep{ background: var(--garnet); border-color: var(--garnet); color:#fff; }
+  .story-question{ font-family:'Fraunces','Noto Sans TC',serif; font-size:19px; font-weight:600; line-height:1.45; text-align:center; padding:24px 14px; min-height:110px; display:flex; align-items:center; justify-content:center; background: var(--parchment-dim); border-radius:12px; margin-bottom:14px; color: var(--ink); }
+
+  /* ---------- hotseat modal ---------- */
+  .hotseat-subject{ text-align:center; font-family:'Fraunces','Noto Sans TC',serif; font-size:22px; font-weight:600; margin-bottom:16px; color: var(--garnet); }
+  .hotseat-q{ font-size:16px; font-weight:500; text-align:center; padding:18px 12px; background: var(--parchment-dim); border-radius:12px; margin-bottom:14px; min-height:80px; display:flex; align-items:center; justify-content:center; }
+
+  .deck-header{ display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .match-count{ font-family:'IBM Plex Mono', monospace; font-size:13px; color: rgba(243,236,217,0.7); margin:0; flex:1; }
+  .match-count strong{ color: var(--brass-bright); font-weight:600; }
+  .deck-header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .filter-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(243,236,217,0.1); border:1px solid rgba(243,236,217,0.25); color:var(--parchment);
+    border-radius:999px; padding:6px 12px; font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+    letter-spacing:0.05em; cursor:pointer; transition:background .15s;
+  }
+  .filter-btn:hover{ background:rgba(243,236,217,0.18); }
+  .filter-btn.active{ background:var(--brass); border-color:var(--brass); color:var(--ink); }
+  .filter-badge{ background:var(--garnet); color:#fff; border-radius:999px; padding:0 5px; font-size:10px; font-weight:700; line-height:1.6; }
+  .filter-panel{ background:rgba(243,236,217,0.07); border:1px solid rgba(243,236,217,0.15); border-radius:12px; padding:14px 14px 12px; margin-bottom:14px; }
+  .filter-panel-section{ margin-bottom:10px; }
+  .filter-panel-section:last-child{ margin-bottom:0; }
+  .filter-panel-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(243,236,217,0.45); margin:0 0 8px; }
+  .fp-vibe-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .fp-vibe-pill{ border:1.5px solid rgba(243,236,217,0.2); background:transparent; border-radius:999px; padding:5px 12px; font-size:12px; font-weight:600; font-family:'Inter','Noto Sans TC',sans-serif; cursor:pointer; color:rgba(243,236,217,0.75); transition:all .15s; }
+  .fp-vibe-pill[data-vibe="party"].active{ background:var(--brass); border-color:var(--brass); color:var(--ink); }
+  .fp-vibe-pill[data-vibe="family"].active{ background:var(--slate); border-color:var(--slate); color:#fff; }
+  .fp-vibe-pill[data-vibe="icebreaker"].active{ background:var(--lavender); border-color:var(--lavender); color:#fff; }
+  .fp-vibe-pill[data-vibe="drinking"].active{ background:var(--garnet); border-color:var(--garnet); color:#fff; }
+  .fp-chip-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .fp-chip{ display:inline-flex; align-items:center; gap:5px; border:1.5px solid rgba(243,236,217,0.2); background:transparent; color:rgba(243,236,217,0.75); border-radius:999px; padding:5px 10px 5px 8px; font-size:11.5px; font-weight:500; cursor:pointer; transition:all .15s; font-family:'Inter','Noto Sans TC',sans-serif; }
+  .fp-chip svg{ width:13px; height:13px; flex-shrink:0; }
+  .fp-chip.active{ background:rgba(243,236,217,0.9); border-color:rgba(243,236,217,0.9); color:var(--ink); }
+
+  .instant-btn{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    width:100%; max-width:420px; margin:0 0 22px;
+    background: var(--garnet); color:#fff; border:none; border-radius:12px;
+    padding:14px 16px; font-family:'Fraunces','Noto Sans TC',serif; font-weight:600; font-size:16px;
+    cursor:pointer; box-shadow:0 10px 24px rgba(166,64,47,0.4); transition: transform .12s, background .15s;
+  }
+  .instant-btn:hover{ background:#8a3326; }
+  .instant-btn:active{ transform: scale(0.97); }
+  .instant-btn:focus-visible{ outline:2px solid var(--brass-bright); outline-offset:3px; }
+  .instant-dice{ font-size:20px; display:inline-block; transition: transform .4s cubic-bezier(.2,.9,.3,1); }
+  .instant-btn.rolling .instant-dice{ transform: rotate(330deg) scale(1.15); }
+
+  /* ---------- swipe deck ---------- */
+  .swipe-area{ display:flex; flex-direction:column; align-items:center; }
+  .swipe-stack{ position:relative; width:100%; max-width:380px; height:380px; margin-bottom:20px; }
+  .stack-deco{ position:absolute; inset:0; border-radius:14px; background: var(--parchment-dim); box-shadow:0 8px 20px rgba(0,0,0,0.18); }
+  .stack-deco.d1{ transform: translateY(10px) scale(0.97); z-index:1; }
+  .stack-deco.d2{ transform: translateY(20px) scale(0.93); z-index:0; opacity:0.65; }
+
+  .swipe-card{
+    position:absolute; inset:0; z-index:2; background: var(--parchment); color: var(--ink); border-radius:14px;
+    padding:24px 22px 20px; box-shadow: 0 16px 36px rgba(0,0,0,0.3); touch-action:none; cursor:grab; user-select:none;
+    will-change:transform; transition: transform .28s ease, opacity .28s ease; display:flex; flex-direction:column;
+  }
+  .swipe-card.dragging{ transition:none; cursor:grabbing; }
+  .swipe-card.fly-right{ transform: translateX(700px) rotate(22deg) !important; opacity:0; }
+  .swipe-card.fly-left{ transform: translateX(-700px) rotate(-22deg) !important; opacity:0; }
+  .swipe-card::before, .swipe-card::after{ content:""; position:absolute; top:9px; width:13px; height:13px; border-radius:50%; background: var(--pine); box-shadow: inset 0 1px 3px rgba(0,0,0,0.45); }
+  .swipe-card::before{ left:16px; } .swipe-card::after{ right:16px; }
+
+  .overlay-stamp{ position:absolute; top:18px; font-family:'Fraunces', serif; font-weight:700; font-size:26px; padding:5px 12px; border:3px solid; border-radius:8px; opacity:0; pointer-events:none; z-index:3; transition: opacity .05s; }
+  .overlay-stamp.like{ left:18px; color: var(--slate); border-color: var(--slate); transform:rotate(-12deg); }
+  .overlay-stamp.nope{ right:18px; color: var(--garnet); border-color: var(--garnet); transform:rotate(12deg); }
+
+  .sc-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin:6px 0 12px; flex-wrap:wrap; }
+  .badges-group{ display:flex; gap:6px; flex-wrap:wrap; }
+  .players-badge{ font-family:'IBM Plex Mono', monospace; font-size:12px; border:1px solid var(--garnet); color: var(--garnet); border-radius:999px; padding:3px 9px; white-space:nowrap; }
+  .duration-badge{ font-family:'IBM Plex Mono', monospace; font-size:12px; border:1px solid var(--ink-soft); color: var(--ink-soft); border-radius:999px; padding:3px 9px; white-space:nowrap; }
+  .vibe-tags{ display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; }
+  .vibe-tag{ display:inline-flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:3px 8px; border-radius:999px; color:#fff; line-height:1; }
+  .vibe-tag.party{ background: var(--brass); color: var(--ink); }
+  .vibe-tag.family{ background: var(--slate); }
+  .vibe-tag.icebreaker{ background: var(--lavender); }
+  .vibe-tag.drinking{ background: var(--garnet); }
+
+  .sc-title{ font-family:'Fraunces','Noto Sans TC', serif; font-weight:600; font-size:24px; margin:0 0 8px; }
+  .sc-tag{ font-size:14.5px; color: var(--ink-soft); margin:0 0 16px; flex:1; }
+  .tools-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+  .tool-tag{ display:flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; background: var(--parchment-dim); border-radius:999px; padding:4px 9px 4px 7px; }
+  .tool-tag svg{ width:13px; height:13px; }
+  .tool-tag.none{ color: var(--ink-soft); font-style:italic; font-weight:500; background:transparent; padding-left:0; }
+  .sc-hint{ font-family:'IBM Plex Mono', monospace; font-size:11px; color: var(--ink-soft); text-align:center; margin-top:auto; padding-top:10px; border-top:1px dashed var(--line); }
+
+  .swipe-controls{ display:flex; justify-content:center; gap:26px; margin-bottom:10px; }
+  .swipe-btn{ width:58px; height:58px; border-radius:50%; border:none; font-size:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(0,0,0,0.3); transition: transform .12s; }
+  .swipe-btn:active{ transform: scale(0.9); }
+  .swipe-btn:focus-visible{ outline:3px solid var(--brass-bright); outline-offset:3px; }
+  .swipe-btn.skip{ background: var(--parchment); color: var(--garnet); }
+  .swipe-btn.play{ background: var(--garnet); color: #fff; }
+  .swipe-hint{ font-size:12px; color: rgba(243,236,217,0.55); text-align:left; margin:0 0 6px; }
+  .reshuffle-link{ background:none; border:none; font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:0.05em; text-transform:uppercase; color: rgba(243,236,217,0.6); text-decoration:underline; cursor:pointer; padding:0; display:block; margin:0; }
+  .reshuffle-link:hover{ color: var(--brass-bright); }
+
+  .empty-state, .end-state{ background: rgba(243,236,217,0.06); border:1px dashed rgba(243,236,217,0.3); border-radius:14px; padding:40px 30px; text-align:center; color: rgba(243,236,217,0.85); max-width:380px; }
+  .empty-state h3, .end-state h3{ font-family:'Fraunces','Noto Sans TC', serif; font-size:20px; margin:0 0 8px; color: var(--parchment); }
+  .empty-state button, .end-state button{ margin-top:14px; background: var(--brass); color: var(--ink); border:none; border-radius:8px; padding:9px 16px; font-family:'Inter','Noto Sans TC', sans-serif; font-weight:600; font-size:13px; cursor:pointer; }
+
+  footer{ margin-top:48px; text-align:center; font-family:'IBM Plex Mono', monospace; font-size:12px; color: rgba(243,236,217,0.45); }
+
+  /* ---------- generic modal ---------- */
+  .modal-overlay{ position:fixed; inset:0; background: rgba(20,30,27,0.8); display:flex; align-items:center; justify-content:center; padding:20px; z-index:200; }
+  .modal-overlay.hidden{ display:none; }
+  .modal-box{ background: var(--parchment); color: var(--ink); border-radius:16px; max-width:420px; width:100%; padding:26px 24px 24px; position:relative; box-shadow:0 30px 60px rgba(0,0,0,0.4); max-height:88vh; overflow-y:auto; }
+  .modal-close{ position:absolute; top:12px; right:12px; background:none; border:none; font-size:20px; cursor:pointer; color: var(--ink-soft); width:32px; height:32px; border-radius:50%; }
+  .modal-close:hover{ background: var(--parchment-dim); }
+  .modal-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color: var(--garnet); margin:0 0 6px; }
+  .modal-title{ font-family:'Fraunces','Noto Sans TC', serif; font-weight:600; font-size:22px; margin:0 0 16px; }
+  .modal-row{ margin-bottom:16px; }
+  .modal-label{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color: var(--ink-soft); margin:0 0 8px; }
+  .modal-stepper{ display:flex; align-items:center; gap:14px; }
+  .modal-stepper .step-btn{ width:32px; height:32px; font-size:16px; }
+  .modal-stepper .modal-num{ font-family:'Fraunces','Noto Sans TC', serif; font-weight:600; font-size:22px; min-width:30px; text-align:center; }
+  .modal-btn-primary{ width:100%; background: var(--ink); color: var(--parchment); border:none; border-radius:10px; padding:13px 16px; font-family:'Fraunces','Noto Sans TC', serif; font-weight:600; font-size:16px; cursor:pointer; margin-top:6px; }
+  .modal-btn-primary:hover{ background: var(--garnet); }
+  .modal-btn-secondary{ width:100%; background:transparent; color: var(--ink); border:1.5px solid var(--line); border-radius:10px; padding:11px 16px; font-family:'Inter','Noto Sans TC',sans-serif; font-weight:600; font-size:14px; cursor:pointer; margin-top:10px; }
+  .modal-btn-secondary:hover{ border-color: var(--garnet); color: var(--garnet); }
+  .modal-speak-row{ display:flex; justify-content:flex-end; margin-bottom:4px; }
+  .speak-btn{ flex-shrink:0; width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background: transparent; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  .speak-btn:hover{ background: var(--brass-bright); }
+  .speak-btn:focus-visible{ outline:2px solid var(--garnet); outline-offset:2px; }
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .toggle-btn{ flex-shrink:0; width:46px; height:26px; border-radius:999px; border:1.5px solid var(--ink); background: transparent; cursor:pointer; position:relative; }
+  .toggle-btn::after{ content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background: var(--ink); transition: transform .15s; }
+  .toggle-btn.on{ background: var(--garnet); border-color: var(--garnet); }
+  .toggle-btn.on::after{ transform: translateX(20px); background:#fff; }
+  .toggle-btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  .toggle-note{ font-size:11.5px; color: var(--ink-soft); margin:6px 0 0; }
+
+  .rules-steps{ margin:18px 0 4px; padding-left:20px; font-size:14px; }
+  .rules-steps li{ margin-bottom:8px; }
+  .rules-steps li::marker{ font-family:'IBM Plex Mono', monospace; color: var(--brass); font-weight:600; }
+
+  .deck-counter{ font-family:'IBM Plex Mono', monospace; font-size:11px; color: var(--ink-soft); text-align:center; margin-bottom:8px; }
+  .deck-prompt{ font-family:'Fraunces','Noto Sans TC',serif; font-size:21px; font-weight:600; text-align:center; line-height:1.4; padding:22px 16px; min-height:90px; display:flex; align-items:center; justify-content:center; background: var(--parchment-dim); border-radius:12px; margin-bottom:14px; }
+  .versus-row{ display:flex; align-items:stretch; gap:10px; margin-bottom:10px; }
+  .versus-option{ flex:1; background: var(--parchment-dim); border-radius:12px; padding:18px 12px; text-align:center; font-weight:600; font-size:15px; display:flex; align-items:center; justify-content:center; }
+  .versus-or{ font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--ink-soft); text-transform:uppercase; align-self:center; }
+  .truthdare-buttons{ display:flex; gap:10px; margin-bottom:14px; }
+  .td-btn{ flex:1; padding:14px; border-radius:10px; border:none; font-family:'Fraunces','Noto Sans TC',serif; font-weight:600; font-size:16px; cursor:pointer; color:#fff; }
+  .td-btn.truth{ background: var(--slate); }
+  .td-btn.dare{ background: var(--garnet); }
+  .td-label{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color: var(--ink-soft); text-align:center; margin-bottom:8px; }
+
+  .bingo-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:16px; }
+  .bingo-cell{ background: var(--parchment-dim); border-radius:8px; padding:8px 5px; font-size:10px; text-align:center; min-height:62px; display:flex; align-items:center; justify-content:center; cursor:pointer; line-height:1.25; border:2px solid transparent; }
+  .bingo-cell:hover{ border-color: var(--brass); }
+  .bingo-cell.marked{ background: var(--garnet); color:#fff; }
+  .bingo-banner{ text-align:center; font-family:'Fraunces','Noto Sans TC',serif; font-weight:700; font-size:18px; color: var(--garnet); margin-bottom:10px; }
+
+  .reveal-pass{ text-align:center; padding:6px 0 4px; }
+  .reveal-pass-label{ font-family:'IBM Plex Mono', monospace; font-size:12px; color: var(--ink-soft); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.08em; }
+  .reveal-pass-name{ font-family:'Fraunces','Noto Sans TC', serif; font-size:26px; font-weight:600; margin-bottom:18px; }
+  .reveal-word-card{ background: var(--ink); color: var(--parchment); border-radius:12px; padding:28px 14px; margin-bottom:16px; font-family:'Fraunces','Noto Sans TC', serif; font-size:23px; font-weight:600; text-align:center; min-height:84px; display:flex; align-items:center; justify-content:center; }
+  .reveal-word-card.hidden-word{ font-family:'Inter','Noto Sans TC',sans-serif; font-size:14px; color: rgba(243,236,217,0.55); font-weight:500; }
+  .reveal-hint{ font-size:12px; color: var(--ink-soft); text-align:center; margin:-4px 0 14px; font-style:italic; }
+  .play-screen-icon{ font-size:32px; text-align:center; margin-bottom:8px; }
+  .play-screen-text{ text-align:center; font-size:15px; margin-bottom:18px; line-height:1.6; }
+  .reveal-list{ font-size:13.5px; margin:14px 0; padding-left:0; list-style:none; }
+  .reveal-list li{ display:flex; justify-content:space-between; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); }
+  .role-civilian{ color: var(--slate); font-weight:600; }
+  .role-spy{ color: var(--garnet); font-weight:600; }
+  .role-blank{ color: var(--lavender); font-weight:600; }
+
+  .fuse-row{ display:flex; gap:8px; }
+  .fuse-btn{ flex:1; padding:10px; border-radius:10px; border:1.5px solid var(--line); background:transparent; font-size:13px; font-weight:600; cursor:pointer; color: var(--ink); }
+  .fuse-btn.active{ background: var(--ink); border-color: var(--ink); color: var(--parchment); }
+  .bomb-icon{ font-size:48px; text-align:center; margin:8px 0 18px; }
+
+  /* ---------- AI generation ---------- */
+  .ai-loading{ text-align:center; padding:24px 0 8px; }
+  .ai-loading .spinner{
+    width:40px; height:40px; border:3px solid var(--line); border-top-color: var(--garnet);
+    border-radius:50%; animation: spin .7s linear infinite; margin:0 auto 16px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .ai-loading p{ font-size:14px; color: var(--ink-soft); }
+  .ai-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
+    background: linear-gradient(135deg, var(--lavender), var(--slate));
+    color:#fff; padding:4px 10px; border-radius:999px; margin-bottom:12px;
+  }
+  .ai-error{ text-align:center; padding:16px 0; }
+  .ai-error p{ color: var(--garnet); font-size:14px; margin-bottom:12px; }
+
+  /* ---------- inline AI section (below swipe deck) ---------- */
+  .ai-section{ margin-top:18px; text-align:center; max-width:380px; }
+  .ai-divider{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .ai-divider::before,.ai-divider::after{ content:''; flex:1; height:1px; background:rgba(243,236,217,0.16); }
+  .ai-divider span{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(243,236,217,0.38); }
+  .ai-section-label{ color:rgba(243,236,217,0.72); font-size:14.5px; margin:0 0 14px; line-height:1.5; }
+  .ai-generate-btn{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--lavender); border:1.5px solid var(--lavender); color:#fff;
+    border-radius:10px; padding:10px 22px; font-family:'Fraunces','Noto Sans TC',serif;
+    font-weight:600; font-size:15px; cursor:pointer; transition:background .15s, border-color .15s;
+  }
+  .ai-generate-btn:hover{ background:#6a5c98; border-color:#6a5c98; }
+  .ai-generate-btn:active{ transform:scale(0.97); }
+  .ai-generate-btn:focus-visible{ outline:2px solid var(--lavender); outline-offset:3px; }
+  .see-all-link{
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(243,236,217,0.1); border:1px solid rgba(243,236,217,0.25); color:var(--parchment);
+    border-radius:999px; padding:6px 12px; font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+    letter-spacing:0.05em; cursor:pointer; transition:background .15s; white-space:nowrap;
+  }
+  .see-all-link:hover{ background:rgba(243,236,217,0.18); }
+  .find-games-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; background:var(--garnet); color:#fff; border:none; border-radius:12px;
+    padding:13px 16px; font-family:'Fraunces','Noto Sans TC',serif; font-weight:600; font-size:16px;
+    cursor:pointer; box-shadow:0 8px 20px rgba(166,64,47,0.35); transition:background .15s, transform .1s;
+    margin-top:18px;
+  }
+  .find-games-btn:hover{ background:#8a3326; }
+  .find-games-btn:active{ transform:scale(0.97); }
+  .find-games-btn:focus-visible{ outline:2px solid var(--brass-bright); outline-offset:3px; }
+  .game-list-item{ display:flex; align-items:center; gap:10px; padding:10px 8px; border-bottom:1px solid var(--line); cursor:pointer; border-radius:8px; transition:background .12s; }
+  .game-list-item:hover{ background:var(--parchment-dim); }
+  .game-list-item:last-child{ border-bottom:none; }
+  .game-list-name{ font-family:'Fraunces','Noto Sans TC',serif; font-weight:600; font-size:14.5px; flex:1; }
+  .game-list-meta{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); white-space:nowrap; }
+  .game-list-vibes{ display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
+  .api-key-input{ width:100%; font-family:'IBM Plex Mono',monospace; font-size:13px; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; background:var(--parchment-dim); color:var(--ink); margin:6px 0 14px; box-sizing:border-box; }
+  .api-key-input:focus{ outline:2px solid var(--garnet); outline-offset:0; border-color:var(--garnet); }
+  .api-key-note{ font-size:12px; color:var(--ink-soft); line-height:1.55; margin:0 0 10px; }
+</style>
+</head>
+<body>
+<button class="lang-toggle" id="langToggle" type="button">中文</button>
+
+<div class="wrap">
+
+  <div class="site-header">
+    <p class="eyebrow" id="eyebrowText">Setup &amp; Deal</p>
+    <h1 class="title" id="titleText">What should we play?</h1>
+    <p class="subtitle" id="subtitleText">Tell us how many of you there are and what's within reach. Swipe through the games we deal you, and we'll open up the questions, words, or roles for the one you pick.</p>
+  </div>
+
+  <div class="layout">
+    <div class="controls">
+      <div class="panel-head">
+        <span class="panel-num dark">1</span>
+        <h2 class="panel-title dark" id="setupTitleText">Setup</h2>
+      </div>
+      <div class="control-section">
+        <p class="control-label" id="playersLabelText">Players</p>
+        <div class="stepper">
+          <button class="step-btn" id="minus" aria-label="Decrease players" type="button">–</button>
+          <span class="player-count" id="playerCount">6</span>
+          <button class="step-btn" id="plus" aria-label="Increase players" type="button">+</button>
+        </div>
+      </div>
+      <div class="control-section">
+        <p class="control-label" id="toolsLabelText">What's in the room</p>
+        <div class="chip-grid" id="toolChips"></div>
+      </div>
+      <div class="control-section">
+        <p class="control-label" id="toneLabelText">Tone</p>
+        <div class="vibe-row" id="vibePills"></div>
+      </div>
+      <button class="find-games-btn" id="findGamesBtn" type="button">🃏 <span id="findGamesBtnText">Find Games</span></button>
+      <button class="reset-link" id="resetBtn" type="button">Reset setup</button>
+    </div><!-- /.controls -->
+
+    <div class="results" id="resultsPanel">
+      <!-- JS renders: choose screen OR browse screen -->
+    </div>
+  </div>
+
+  <footer id="footerText">House rules — and local laws — always beat app rules.</footer>
+</div>
+
+<div class="modal-overlay hidden" id="gameModal">
+  <div class="modal-box" id="gameModalBox"></div>
+</div>
+
+<script>
+/* ---------------- icon set ---------------- */
+const ICONS = {
+  paper_pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.1-4.6L16.3 4.2a1.5 1.5 0 0 1 2.1 0l1.4 1.4a1.5 1.5 0 0 1 0 2.1L8.6 18.9 4 20z"/><path d="M14.2 6.1l3.6 3.6"/></svg>',
+  cards: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3.5" y="5" width="10.5" height="14" rx="2" transform="rotate(-10 3.5 5)"/><rect x="9.5" y="5.5" width="10.5" height="14" rx="2"/></svg>',
+  dice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg>',
+  coin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="6.5" y="2" width="11" height="20" rx="2.4"/><line x1="10" y1="18.5" x2="14" y2="18.5"/></svg>',
+  cups: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M6 4.5h12l-1.3 13.6a2 2 0 0 1-2 1.9H9.3a2 2 0 0 1-2-1.9L6 4.5z"/><line x1="5" y1="4.5" x2="19" y2="4.5"/></svg>',
+  bottle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M10 2h4v3.4c0 .6.2 1.1.6 1.6l1.2 1.5c.5.6.7 1.3.7 2V20a2 2 0 0 1-2 2H9.5a2 2 0 0 1-2-2v-9.5c0-.7.2-1.4.7-2l1.2-1.5c.4-.5.6-1 .6-1.6V2z"/><line x1="9.5" y1="2" x2="14.5" y2="2"/></svg>',
+  blindfold: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9.5c2.6-2.1 5.2-3.1 10-3.1s7.4 1 10 3.1"/><circle cx="7.2" cy="10" r="2"/><circle cx="16.8" cy="10" r="2"/><line x1="9.2" y1="10" x2="14.8" y2="10"/></svg>'
+};
+
+const TOOL_META = [
+  { key:'paper_pen', label:'Paper & pen', label_zh:'紙和筆' },
+  { key:'cards', label:'Deck of cards', label_zh:'一副牌' },
+  { key:'dice', label:'Dice', label_zh:'骰子' },
+  { key:'coin', label:'Coin', label_zh:'硬幣' },
+  { key:'cups', label:'Cups', label_zh:'杯子' },
+  { key:'bottle', label:'Bottle', label_zh:'瓶子' },
+  { key:'blindfold', label:'Blindfold or scarf', label_zh:'眼罩或頭巾' }
+];
+
+const VIBE_META = [
+  { key:'party', label:'Party', label_zh:'派對' },
+  { key:'family', label:'Family', label_zh:'家庭' },
+  { key:'icebreaker', label:'Icebreaker', label_zh:'破冰' },
+  { key:'drinking', label:'Drinking', label_zh:'喝酒' }
+];
+
+/* ---------------- UI strings ---------------- */
+const STR = {
+  en: {
+    eyebrow:'Setup & Deal', title:'What should we play?',
+    subtitle:"Tell us how many of you there are and what's within reach. Swipe through the games we deal you, and we'll open up the questions, words, or roles for the one you pick.",
+    setupTitle:'Setup', playersLabel:'Players', toolsLabel:"What's in the room", toneLabel:'Tone',
+    resetBtn:'Reset setup', handTitle:'Your hand', noTools:'No tools needed',
+    footer:'House rules — and local laws — always beat app rules.', minUnit:'min', playersUnit:'players',
+    langToggleLabel:'中文', matchCount:n=>'<strong>'+n+'</strong> game'+(n===1?'':'s')+' in this hand',
+    emptyTitle:'No games match yet', emptyText:'Try adding a tool, widening your player count, or clearing a tone filter.',
+    emptyReset:'Reset setup', endTitle:"You've seen them all", endText:'Shuffle again, or tweak your setup for more options.',
+    swipeHint:'← Skip   /   ✓ Description', reshuffle:'Shuffle again', tapHint:'Swipe right to see how to play',
+    instantBtn:'AI Generate a Game',
+    choose:{
+      panelNum:'2', panelTitle:'Pick your game',
+      aiTitle:'AI Generate', aiDesc:"Tell us your setup and we'll invent something new — no two games are alike.", aiHint:'Calls Claude to create on the spot',
+      browseTitle:'Browse Games', browseDesc:'Swipe through curated games that match your players and vibe.', browseHint:'← Skip  /  Swipe right → Description'
+    },
+    browse:{ back:'← Back', matchCount:n=>'<strong>'+n+'</strong> game'+(n===1?'':'s')+ ' match your setup' },
+    allGames:'All games', allGamesTitle:'All games', findGames:'Find Games',
+    desc:{ playBtn:'Play this game', rulesTitle:'How to play' },
+    storyshare:{ light:'Light', personal:'Personal', deep:'Deep' },
+    hotseat:{ subjectLabel:'In the hot seat:' },
+    closeBtn:'Close', startBtn:'Start', nextBtn:'Next', newCard:'New card', newStarter:'New starter',
+    truthLabel:'Truth', dareLabel:'Dare', deckIntro:'Pick Truth or Dare to begin', versusOr:'or',
+    bingoLabel:'Bingo!',
+    common:{ passLabel:'Pass the phone to', playerName:n=>'Player '+n, tapReveal:'Tap to reveal', hidePass:'Hide & continue', categoryLabel:'Category' },
+    spy:{
+      setupTitle:"Who's the Spy", playersLabel:'Players', spiesLabel:'Number of spies',
+      blankToggle:'Add a Blank card', blankNote:"One player gets no word at all — they'll have to bluff their way through.",
+      readyTitle:'Time to play',
+      instructions:n=>(n===1?'One spy is':n+' spies are')+' hiding among you. Go around describing your word in one sentence — without saying it. Then vote out who you suspect.',
+      revealAllBtn:'Reveal all roles', civilian:'Civilian', spyRole:'Spy', blankRole:'Blank', blankWord:'\u2014 no word \u2014',
+      blankReveal:"You're the Blank. You get no word \u2014 listen closely and bluff your way through."
+    },
+    mafia:{
+      setupTitle:'Mafia', playersLabel:'Players', mafiaLabel:'Number of Mafia', readyTitle:'Time to play',
+      instructions:n=>(n===1?'One Mafia is':n+' Mafia are')+' hiding among the Townsfolk. Everyone close your eyes so the Mafia can choose in secret, then discuss and vote out who you suspect.',
+      revealAllBtn:'Reveal all roles', mafiaRole:'Mafia', townsfolk:'Townsfolk',
+      mafiaFlavor:"Stay hidden, vote with the crowd, and don't get caught.", townsfolkFlavor:'Find the Mafia before they find you.'
+    },
+    bomb:{
+      setupTitle:'Hot Potato', fuseLabel:'Fuse length', fuseQuick:'Quick', fuseStandard:'Standard', fuseLong:'Long',
+      nextPlayer:'Pass to next player', boomText:"\uD83D\uDCA5 Boom! Whoever's holding the phone is out.", playAgain:'Play again'
+    }
+  },
+  zh: {
+    eyebrow:'設定與發牌', title:'我們該玩什麼？',
+    subtitle:'告訴我們你們有幾個人、手邊有什麼道具。滑動我們發給你的遊戲，選中哪個，我們就直接生成題目、詞語或身分卡給你。',
+    setupTitle:'設定', playersLabel:'人數', toolsLabel:'現場有什麼道具', toneLabel:'氛圍',
+    resetBtn:'重設設定', handTitle:'你的手牌', noTools:'不需要道具',
+    footer:'現場的規則，和當地法律，永遠比這個 App 說的算。', minUnit:'分鐘', playersUnit:'人',
+    langToggleLabel:'EN', matchCount:n=>'這手牌裡有 <strong>'+n+'</strong> 個遊戲',
+    emptyTitle:'目前沒有符合的遊戲', emptyText:'試著勾選更多道具、調整人數，或取消氛圍篩選。',
+    emptyReset:'重設設定', endTitle:'這手牌你都看過了', endText:'重新洗牌，或調整一下設定看看更多選項。',
+    swipeHint:'← 不要   /   ✓ 看說明', reshuffle:'重新洗牌', tapHint:'右滑看玩法說明',
+    instantBtn:'AI 生成遊戲',
+    choose:{
+      panelNum:'2', panelTitle:'選一種方式',
+      aiTitle:'AI 生成', aiDesc:"告訴我們你們的設定，我們幫你即時創作一個全新遊戲，每次都不一樣。", aiHint:'呼叫 Claude 即時設計',
+      browseTitle:'瀏覽手牌', browseDesc:'滑過符合你人數和氛圍的遊戲清單。', browseHint:'← 不要  /  右滑 → 看說明'
+    },
+    allGames:'全部遊戲', allGamesTitle:'所有遊戲', findGames:'找遊戲',
+    browse:{ back:'← 返回', matchCount:n=>'有 <strong>'+n+'</strong> 個遊戲符合你的設定' },
+    desc:{ playBtn:'開始玩這個遊戲', rulesTitle:'玩法說明' },
+    storyshare:{ light:'輕鬆', personal:'有點私', deep:'很深' },
+    hotseat:{ subjectLabel:'坐上熱椅的是：' },
+    closeBtn:'關閉', startBtn:'開始', nextBtn:'下一個', newCard:'換一張', newStarter:'換一個',
+    truthLabel:'真心話', dareLabel:'大冒險', deckIntro:'選真心話或大冒險開始', versusOr:'還是',
+    bingoLabel:'賓果！',
+    common:{ passLabel:'把手機交給', playerName:n=>'第 '+n+' 位玩家', tapReveal:'點一下看', hidePass:'收起來，繼續', categoryLabel:'類別' },
+    spy:{
+      setupTitle:'誰是臥底', playersLabel:'人數', spiesLabel:'臥底人數',
+      blankToggle:'加入白板', blankNote:'有一位玩家完全不會拿到詞——他得靠瞎掰混過去。',
+      readyTitle:'可以開始了',
+      instructions:n=>'現場有 '+n+' 位臥底躲在裡面。輪流用一句話描述你的詞——但不能直接說出來。輪完後投票踢出你覺得可疑的人。',
+      revealAllBtn:'公開所有身分', civilian:'平民', spyRole:'臥底', blankRole:'白板', blankWord:'（沒有詞）',
+      blankReveal:'你是白板。你沒有拿到任何詞——仔細聽，然後想辦法混過去。'
+    },
+    mafia:{
+      setupTitle:'殺手遊戲', playersLabel:'人數', mafiaLabel:'殺手人數', readyTitle:'可以開始了',
+      instructions:n=>'平民裡躲著 '+n+' 位殺手。大家先閉上眼睛讓殺手偷偷選人，再睜眼討論並投票踢出嫌疑人。',
+      revealAllBtn:'公開所有身分', mafiaRole:'殺手', townsfolk:'平民',
+      mafiaFlavor:'保持低調，跟著大家投票，別被抓到。', townsfolkFlavor:'在殺手抓到你之前，先把他們揪出來。'
+    },
+    bomb:{
+      setupTitle:'燙手山芋', fuseLabel:'導火線長度', fuseQuick:'快', fuseStandard:'標準', fuseLong:'長',
+      nextPlayer:'傳給下一位', boomText:'\uD83D\uDCA5 砰！現在拿著手機的人出局。', playAgain:'再來一輪'
+    }
+  }
+};
+
+/* ---------------- content banks ---------------- */
+const TRUTH_BANK = [
+  {en:"What's something you've never told your parents?", zh:"有什麼事你從來沒跟爸媽說過？"},
+  {en:"What's the most embarrassing song on your playlist?", zh:"你的播放清單裡最尷尬的一首歌是什麼？"},
+  {en:"Who in this room would you trust with a secret, and why?", zh:"這裡面你最信任誰來保守秘密？為什麼？"},
+  {en:"What's a lie you told recently and got away with?", zh:"最近說過什麼謊，而且沒被抓到？"},
+  {en:"What's something you pretend to like but actually don't?", zh:"有什麼東西你裝作喜歡，其實根本不喜歡？"},
+  {en:"What's the last thing you searched for online?", zh:"你上次在網路上搜尋的東西是什麼？"},
+  {en:"What's your most irrational fear?", zh:"你最沒道理的恐懼是什麼？"},
+  {en:"Who was your first crush?", zh:"你第一個喜歡的人是誰？"},
+  {en:"What's a habit you wish you could break?", zh:"有什麼習慣你很想戒掉？"},
+  {en:"What's the worst gift you've ever given someone?", zh:"你送過最糟的禮物是什麼？"},
+  {en:"What's something you're secretly proud of?", zh:"有什麼事你心裡偷偷以自己為榮？"},
+  {en:"What's a rumor about you that's actually true?", zh:"關於你的傳言裡，有哪一個其實是真的？"},
+  {en:"What's the most trouble you've ever been in?", zh:"你惹過的最大麻煩是什麼？"},
+  {en:"What's something you'd never admit unless asked directly?", zh:"有什麼事不被直接問就絕對不會說？"},
+  {en:"What's a text you regret sending?", zh:"你後悔傳出去的一則訊息是什麼？"},
+  {en:"What's the weirdest thing in your search history?", zh:"你的搜尋紀錄裡最奇怪的東西是什麼？"}
+];
+const DARE_BANK = [
+  {en:"Do your best impression of someone in this room.", zh:"模仿這裡的某個人，模仿得越像越好。"},
+  {en:"Let the group decide your social media status for the next hour.", zh:"接下來一小時，社群�動態由大家決定要寫什麼。"},
+  {en:"Speak in an accent until your next turn.", zh:"用一個口音說話，直到輪到你下一輪。"},
+  {en:"Do 10 jumping jacks right now.", zh:"現在馬上做10個開合跳。"},
+  {en:"Let someone else read your last text message out loud.", zh:"讓別人大聲唸出你最後一則訊息。"},
+  {en:"Sing the chorus of your most-played song.", zh:"唱出你最常聽的那首歌的副歌。"},
+  {en:"Try to make the person to your left laugh in 10 seconds.", zh:"在10秒內想辦法讓左邊的人笑出來。"},
+  {en:"Talk only in rhymes for the next two rounds.", zh:"接下來兩輪只能用押韻的方式說話。"},
+  {en:"Let the group give you a new nickname for the rest of the night.", zh:"讓大家幫你取一個新綽號，用到今晚結束。"},
+  {en:"Do your best dance move, no music allowed.", zh:"跳一段你最厲害的舞，不能放音樂。"},
+  {en:"Trade seats with someone and stay there for two rounds.", zh:"跟別人交換位置，坐兩輪不能換回來。"},
+  {en:"Tell a 30-second story using only questions.", zh:"用30秒講一個故事，但每句話都要是問句。"},
+  {en:"Let someone draw something on your hand with a pen.", zh:"讓別人用筆在你手上畫東西。"},
+  {en:"Do an impression of the last movie or show character you watched.", zh:"模仿你最近看的電影或劇裡的一個角色。"},
+  {en:"Compliment every single person in the room, one by one.", zh:"依序稱讚現場每一個人。"},
+  {en:"Hold a strange pose for the next 60 seconds.", zh:"保持一個奇怪的姿勢60秒。"}
+];
+const WOULD_RATHER_BANK = [
+  {a:{en:'Fly but only 3 feet off the ground', zh:'會飛，但只能離地一公尺'}, b:{en:'Be invisible, but only when no one is looking', zh:'會隱形，但只有沒人看你的時候才有效'}},
+  {a:{en:'Always have to sing instead of speak', zh:'說話只能用唱的'}, b:{en:'Always have to whisper', zh:'說話只能用悄悄話'}},
+  {a:{en:'Have fingers as long as your legs', zh:'手指跟腿一樣長'}, b:{en:'Have legs as short as your fingers', zh:'腿跟手指一樣短'}},
+  {a:{en:'Fight one horse-sized duck', zh:'打一隻馬一樣大的鴨子'}, b:{en:'Fight a hundred duck-sized horses', zh:'打一百隻鴨子一樣大的馬'}},
+  {a:{en:'Unlimited tacos for life, no other food', zh:'一輩子吃到飽的玉米餅，但不能吃別的'}, b:{en:'Unlimited variety, but only one meal a day', zh:'什麼都能吃，但一天只能吃一餐'}},
+  {a:{en:'Talk to animals, but they\u2019re always rude to you', zh:'能跟動物說話，但牠們對你超沒禮貌'}, b:{en:'Never talk to animals at all', zh:'永遠不能跟動物說話'}},
+  {a:{en:'A world with no internet', zh:'一個沒有網路的世界'}, b:{en:'A world with no air conditioning', zh:'一個沒有冷氣的世界'}},
+  {a:{en:'Have to high-five everyone you meet', zh:'遇到每個人都要擊掌'}, b:{en:'Have to apologize to everyone you meet', zh:'遇到每個人都要道歉'}},
+  {a:{en:'Be a giant in a tiny world', zh:'在迷你世界裡當巨人'}, b:{en:'Be tiny in a giant world', zh:'在巨大世界裡當迷你人'}},
+  {a:{en:'One wish granted now, but no more surprises ever', zh:'現在實現一個願望，但以後人生再也沒有驚喜'}, b:{en:'Keep all your surprises, but no wishes', zh:'保留所有驚喜，但沒有願望可以實現'}},
+  {a:{en:'A rewind button on your life', zh:'人生有倒帶按鈕'}, b:{en:'A pause button on your life', zh:'人生有暫停按鈕'}},
+  {a:{en:'Always know when someone\u2019s lying to you', zh:'永遠知道別人有沒有說謊'}, b:{en:'Always get away with your own lies', zh:'你自己說的謊永遠不會被抓包'}},
+  {a:{en:'Be famous for something embarrassing', zh:'因為一件丟臉的事出名'}, b:{en:'Never be famous at all', zh:'永遠不會出名'}},
+  {a:{en:'Have a theme song play whenever you enter a room', zh:'每次進房間都會有自己的主題曲'}, b:{en:'Never be remembered by name', zh:'永遠沒有人記得你的名字'}},
+  {a:{en:'Always have to dance when you hear music', zh:'聽到音樂就一定要跳舞'}, b:{en:'Never be able to dance at all', zh:'永遠都不能跳舞'}},
+  {a:{en:'Live one very long life', zh:'活一次很長的人生'}, b:{en:'Live several short ones', zh:'活好幾次很短的人生'}}
+];
+const BALANCE_BANK = [
+  {a:{en:'Know exactly when you\u2019ll die', zh:'知道自己什麼時候會死'}, b:{en:'Know exactly how you\u2019ll die', zh:'知道自己會怎麼死'}},
+  {a:{en:'Lose every photo from the past year', zh:'失去過去一年所有的照片'}, b:{en:'Lose every contact in your phone', zh:'失去手機裡所有的聯絡人'}},
+  {a:{en:'Be famous but broke', zh:'很有名但很窮'}, b:{en:'Be rich but unknown', zh:'很有錢但沒人認識你'}},
+  {a:{en:'Never eat your favorite food again', zh:'再也不能吃你最愛的食物'}, b:{en:'Never watch your favorite show again', zh:'再也不能看你最愛的劇'}},
+  {a:{en:'Always be 10 minutes late', zh:'永遠遲到十分鐘'}, b:{en:'Always be 30 minutes early', zh:'永遠提早三十分鐘到'}},
+  {a:{en:'Read everyone\u2019s mind for a day', zh:'有一天能看穿所有人的想法'}, b:{en:'Have everyone read your mind for a day', zh:'有一天所有人都能看穿你的想法'}},
+  {a:{en:'Live without music', zh:'生活裡沒有音樂'}, b:{en:'Live without movies or shows', zh:'生活裡沒有電影跟劇'}},
+  {a:{en:'Be unable to lie, ever', zh:'永遠沒辦法說謊'}, b:{en:'Be unable to tell the truth, ever', zh:'永遠沒辦法說實話'}},
+  {a:{en:'Unlimited money, but no time to spend it', zh:'有花不完的錢，但沒有時間花'}, b:{en:'Unlimited time, but very little money', zh:'有花不完的時間，但錢很少'}},
+  {a:{en:'Relive your best day, forever', zh:'永遠重複過你最棒的一天'}, b:{en:'Never remember your best day again', zh:'永遠想不起你最棒的那一天'}},
+  {a:{en:'Always know exactly how others see you', zh:'永遠知道別人怎麼看你'}, b:{en:'Never know how others see you', zh:'永遠不知道別人怎麼看你'}},
+  {a:{en:'Give up your phone for a month', zh:'一個月不能用手機'}, b:{en:'Give up coffee or tea forever', zh:'永遠不能喝咖啡或茶'}},
+  {a:{en:'Always say what you\u2019re thinking out loud', zh:'心裡想的話都要直接說出口'}, b:{en:'Never speak unless spoken to first', zh:'除非別人先開口，否則不能說話'}},
+  {a:{en:'Travel anywhere for free, but always alone', zh:'到哪都免費，但永遠只能一個人去'}, b:{en:'Only travel locally, but with anyone you want', zh:'只能在附近玩，但可以找任何人一起去'}},
+  {a:{en:'Be the funniest person in every room', zh:'在任何場合都是最幽默的人'}, b:{en:'Be the smartest person in every room', zh:'在任何場合都是最聰明的人'}},
+  {a:{en:'Wake up with everyone\u2019s respect', zh:'醒來發現所有人都尊重你'}, b:{en:'Wake up with everyone\u2019s trust', zh:'醒來發現所有人都信任你'}}
+];
+const NHIE_BANK = [
+  {en:'Never have I ever pretended to be sick to skip something.', zh:'我從來沒有裝病逃避一件事。'},
+  {en:'Never have I ever sent a text to the wrong person.', zh:'我從來沒有把訊息傳錯人。'},
+  {en:'Never have I ever forgotten someone\u2019s name right after meeting them.', zh:'我從來沒有剛認識一個人就忘記他的名字。'},
+  {en:'Never have I ever looked up an ex on social media.', zh:'我從來沒有在社群上偷看前任。'},
+  {en:'Never have I ever laughed at the wrong moment.', zh:'我從來沒有在不該笑的時候笑出來。'},
+  {en:'Never have I ever cried during a movie or show.', zh:'我從來沒有看電影或劇看到哭。'},
+  {en:'Never have I ever told a small lie to get out of plans.', zh:'我從來沒有說小謊來推掉約會。'},
+  {en:'Never have I ever talked about someone right before they walked in.', zh:'我從來沒有在某人走進來前正好在聊他。'},
+  {en:'Never have I ever fallen asleep during a movie in a theater.', zh:'我從來沒有在電影院看片看到睡著。'},
+  {en:'Never have I ever pretended to know a song I\u2019d never heard.', zh:'我從來沒有假裝知道一首根本沒聽過的歌。'},
+  {en:'Never have I ever searched my own name online.', zh:'我從來沒有在網路上搜尋過自己的名字。'},
+  {en:'Never have I ever shown up at the wrong place for an event.', zh:'我從來沒有跑錯地方參加活動。'},
+  {en:'Never have I ever eaten food that fell on the floor.', zh:'我從來沒有吃過掉在地上的食物。'},
+  {en:'Never have I ever lied about my age.', zh:'我從來沒有謊報過自己的年紀。'},
+  {en:'Never have I ever stopped replying to someone without explanation.', zh:'我從來沒有突然不回某人的訊息，也沒解釋。'},
+  {en:'Never have I ever taken credit for something I didn\u2019t do.', zh:'我從來沒有把別人的功勞說成自己的。'}
+];
+const CATEGORIES_BANK = [
+  {en:'Movies', zh:'電影'}, {en:'Animals', zh:'動物'}, {en:'Countries', zh:'國家'}, {en:'Foods', zh:'食物'},
+  {en:'Sports', zh:'運動'}, {en:'Colors', zh:'顏色'}, {en:'Songs', zh:'歌曲'}, {en:'Jobs', zh:'職業'},
+  {en:'Cities', zh:'城市'}, {en:'Drinks', zh:'飲料'}, {en:'Brands', zh:'品牌'}, {en:'Superheroes', zh:'超級英雄'},
+  {en:'School subjects', zh:'學科'}, {en:'Board games', zh:'桌遊'}, {en:'Fruits', zh:'水果'}, {en:'Vegetables', zh:'蔬菜'},
+  {en:'Holidays', zh:'節日'}, {en:'Hobbies', zh:'興趣愛好'}, {en:'Instruments', zh:'樂器'}, {en:'Card games', zh:'紙牌遊戲'}
+];
+const IMAGE_GAME_BANK = [
+  {en:'Most likely to become famous by accident', zh:'最有可能不小心就紅了'},
+  {en:'Most likely to forget their own birthday', zh:'最有可能忘記自己生日'},
+  {en:'Most likely to win an argument with zero evidence', zh:'最有可能完全沒證據也能吵贏'},
+  {en:'Most likely to cry happy tears', zh:'最有可能感動到哭'},
+  {en:'Most likely to fall asleep at a party', zh:'最有可能在派對上睡著'},
+  {en:'Most likely to become a YouTuber overnight', zh:'最有可能一夕之間變成YouTuber'},
+  {en:'Most likely to talk their way out of a parking ticket', zh:'最有可能靠嘴砲躲過罰單'},
+  {en:'Most likely to start a business on a whim', zh:'最有可能一時興起就創業'},
+  {en:'Most likely to be the last one to leave a party', zh:'最有可能是派對最後一個走的人'},
+  {en:'Most likely to send a text and immediately regret it', zh:'最有可能訊息發出去馬上後悔'},
+  {en:'Most likely to survive a zombie apocalypse', zh:'最有可能在殭屍末日活下來'},
+  {en:'Most likely to become a millionaire', zh:'最有可能成為百萬富翁'},
+  {en:'Most likely to laugh at the worst possible moment', zh:'最有可能在最不該笑的時候笑出來'},
+  {en:'Most likely to get lost even with GPS', zh:'最有可能用了導航還是迷路'},
+  {en:'Most likely to adopt every stray animal they see', zh:'最有可能看到流浪動物就想養'},
+  {en:'Most likely to become the main character of a drama', zh:'最有可能變成八點檔的主角'}
+];
+const SKETCH_WORDS = [
+  {en:'Cat', zh:'貓'}, {en:'Elephant', zh:'大象'}, {en:'Guitar', zh:'吉他'}, {en:'Umbrella', zh:'雨傘'},
+  {en:'Pizza', zh:'披薩'}, {en:'Robot', zh:'機器人'}, {en:'Bicycle', zh:'自行車'}, {en:'Snowman', zh:'雪人'},
+  {en:'Octopus', zh:'章魚'}, {en:'Volcano', zh:'火山'}, {en:'Ghost', zh:'鬼'}, {en:'Dragon', zh:'龍'},
+  {en:'Sandwich', zh:'三明治'}, {en:'Rocket', zh:'火箭'}, {en:'Kangaroo', zh:'袋鼠'}, {en:'Lighthouse', zh:'燈塔'},
+  {en:'Pirate', zh:'海盜'}, {en:'Cactus', zh:'仙人掌'}, {en:'Skateboard', zh:'滑板'}, {en:'Telescope', zh:'望遠鏡'},
+  {en:'Mermaid', zh:'美人魚'}, {en:'Tornado', zh:'龍捲風'}, {en:'Penguin', zh:'企鵝'}, {en:'Campfire', zh:'營火'}
+];
+const FOREHEAD_WORDS = [
+  {en:'Birthday', zh:'生日'}, {en:'Internet', zh:'網路'}, {en:'Coffee shop', zh:'咖啡廳'}, {en:'Superhero', zh:'超級英雄'},
+  {en:'Wedding', zh:'婚禮'}, {en:'Beach', zh:'海邊'}, {en:'Concert', zh:'演唱會'}, {en:'Library', zh:'圖書館'},
+  {en:'Astronaut', zh:'太空人'}, {en:'Chef', zh:'主廚'}, {en:'Detective', zh:'偵探'}, {en:'Vampire', zh:'吸血鬼'},
+  {en:'Yoga', zh:'瑜珈'}, {en:'Camping', zh:'露營'}, {en:'Magician', zh:'魔術師'}, {en:'Subway', zh:'地下鐵'},
+  {en:'Bakery', zh:'麵包店'}, {en:'Firefighter', zh:'消防員'}, {en:'Photographer', zh:'攝影師'}, {en:'Carnival', zh:'園遊會'},
+  {en:'Treasure', zh:'寶藏'}, {en:'Spaceship', zh:'太空船'}, {en:'Knight', zh:'騎士'}, {en:'Volcano', zh:'火山'}
+];
+const BINGO_TRAITS = [
+  {en:'Has traveled to 3+ countries', zh:'去過三個以上的國家'}, {en:'Speaks two or more languages', zh:'會說兩種以上的語言'},
+  {en:'Has a pet', zh:'有養寵物'}, {en:'Can play an instrument', zh:'會演奏樂器'},
+  {en:'Has run a 10k or more', zh:'跑過10公里以上'}, {en:'Has a tattoo', zh:'有刺青'},
+  {en:'Doesn\u2019t drink coffee', zh:'不喝咖啡'}, {en:'Has lived abroad', zh:'曾在國外生活過'},
+  {en:'Can cook a signature dish', zh:'有一道拿手菜'}, {en:'Has read 10+ books this year', zh:'今年讀了十本以上的書'},
+  {en:'Has gone semi-viral online once', zh:'曾經有一篇貼文小爆紅過'}, {en:'Is left-handed', zh:'是左撇子'},
+  {en:'Has a sibling', zh:'有兄弟姊妹'}, {en:'Has done karaoke on stage', zh:'上台唱過卡拉OK'},
+  {en:'Has never broken a bone', zh:'從來沒骨折過'}, {en:'Knows how to swim', zh:'會游泳'},
+  {en:'Has a favorite karaoke song ready', zh:'有一首必點的KTV歌'}, {en:'Has gone camping', zh:'露營過'},
+  {en:'Can solve a Rubik\u2019s cube', zh:'會解魔術方塊'}, {en:'Has dyed their hair an unusual color', zh:'染過特別的髮色'},
+  {en:'Has performed on a stage', zh:'曾經上台表演過'}, {en:'Owns more than 50 books', zh:'家裡有超過50本書'},
+  {en:'Has tried something that scared them on purpose', zh:'故意挑戰過讓自己害怕的事'}, {en:'Has met someone famous', zh:'見過名人'}
+];
+const STORY_STARTERS = [
+  {en:'The door had been locked for ten years, until tonight.', zh:'那扇門鎖了十年，直到今晚。'},
+  {en:'Nobody believed her when she said the cat could talk.', zh:'她說那隻貓會說話的時候，沒有人相信她。'},
+  {en:'It was supposed to be a quiet Tuesday.', zh:'原本應該是個安靜的星期二。'},
+  {en:'The last text he sent made no sense at all.', zh:'他傳的最後一則訊息完全看不懂。'},
+  {en:'Three strangers showed up at the same address.', zh:'三個陌生人同時出現在同一個地址。'},
+  {en:'The map led nowhere, which was exactly the problem.', zh:'地圖根本沒有指向任何地方，這正是問題所在。'},
+  {en:'She found the letter under a floorboard.', zh:'她在地板下發現了那封信。'},
+  {en:'The plane landed an hour early, with no explanation.', zh:'飛機提早一小時降落，沒有任何解釋。'},
+  {en:'Everyone at the table had the same dream last night.', zh:'桌上每個人昨晚都做了同一個夢。'},
+  {en:'The lights flickered right before the doorbell rang.', zh:'門鈴響起前，燈先閃了一下。'}
+];
+const TELEPHONE_STARTERS = [
+  {en:'The penguin stole my sandwich.', zh:'企鵝偷走了我的三明治。'},
+  {en:'Grandma\u2019s secret recipe involves glitter.', zh:'奶奶的祕密食譜裡有亮粉。'},
+  {en:'I left my shoes on the moon.', zh:'我把鞋子留在月球上了。'},
+  {en:'The cat ordered pizza again.', zh:'那隻貓又訂披薩了。'},
+  {en:'My umbrella is afraid of thunder.', zh:'我的雨傘很怕打雷。'},
+  {en:'The robot forgot how to dance.', zh:'機器人忘記怎麼跳舞了。'},
+  {en:'There\u2019s a dragon in the parking lot.', zh:'停車場裡有一隻龍。'},
+  {en:'My phone only speaks French now.', zh:'我的手機現在只會說法文。'},
+  {en:'The ghost pays rent on time.', zh:'那個鬼準時繳房租。'},
+  {en:'Our neighbor adopted a kangaroo.', zh:'我們的鄰居養了一隻袋鼠。'}
+];
+const PAPER_TELEPHONE_STARTERS = [
+  {en:'A dinosaur riding a bicycle.', zh:'一隻騎自行車的恐龍。'},
+  {en:'A cat wearing sunglasses at the beach.', zh:'一隻在海邊戴墨鏡的貓。'},
+  {en:'A robot watering flowers.', zh:'一個在澆花的機器人。'},
+  {en:'An octopus playing the piano.', zh:'一隻在彈鋼琴的章魚。'},
+  {en:'A ghost ordering coffee.', zh:'一個在點咖啡的鬼。'},
+  {en:'A penguin on a skateboard.', zh:'一隻在滑滑板的企鵝。'},
+  {en:'A dragon reading a book.', zh:'一隻在看書的龍。'},
+  {en:'A mermaid eating a sandwich.', zh:'一個在吃三明治的美人魚。'},
+  {en:'A snowman at the beach.', zh:'一個在海邊的雪人。'},
+  {en:'A pirate doing yoga.', zh:'一個在做瑜珈的海盜。'}
+];
+const WORD_CHAIN_STARTERS = [
+  {en:'Ocean', zh:'海洋'}, {en:'Fire', zh:'火'}, {en:'Mountain', zh:'山'}, {en:'Coffee', zh:'咖啡'},
+  {en:'Bridge', zh:'橋'}, {en:'Star', zh:'星星'}, {en:'Garden', zh:'花園'}, {en:'Storm', zh:'風暴'},
+  {en:'Island', zh:'島'}, {en:'Mirror', zh:'鏡子'}, {en:'Forest', zh:'森林'}, {en:'Clock', zh:'時鐘'},
+  {en:'River', zh:'河'}, {en:'Desert', zh:'沙漠'}, {en:'Moon', zh:'月亮'}, {en:'Thunder', zh:'雷'}
+];
+const SPY_WORDS = [
+  { category:{en:'Food & Drink', zh:'飲食'}, civ:{en:'Coffee', zh:'咖啡'}, spy:{en:'Milk tea', zh:'奶茶'} },
+  { category:{en:'Food & Drink', zh:'飲食'}, civ:{en:'Watermelon', zh:'西瓜'}, spy:{en:'Cantaloupe', zh:'哈密瓜'} },
+  { category:{en:'Food & Drink', zh:'飲食'}, civ:{en:'Hot pot', zh:'火鍋'}, spy:{en:'BBQ', zh:'燒烤'} },
+  { category:{en:'Food & Drink', zh:'飲食'}, civ:{en:'Breakfast', zh:'早餐'}, spy:{en:'Brunch', zh:'早午餐'} },
+  { category:{en:'Animals', zh:'動物'}, civ:{en:'Cat', zh:'貓'}, spy:{en:'Dog', zh:'狗'} },
+  { category:{en:'Animals', zh:'動物'}, civ:{en:'Tiger', zh:'老虎'}, spy:{en:'Leopard', zh:'豹'} },
+  { category:{en:'Places', zh:'地點'}, civ:{en:'Beach', zh:'海邊'}, spy:{en:'Swimming pool', zh:'游泳池'} },
+  { category:{en:'Places', zh:'地點'}, civ:{en:'Library', zh:'圖書館'}, spy:{en:'Bookstore', zh:'書店'} },
+  { category:{en:'Places', zh:'地點'}, civ:{en:'Bus', zh:'公車'}, spy:{en:'MRT', zh:'捷運'} },
+  { category:{en:'Places', zh:'地點'}, civ:{en:'Hotel', zh:'飯店'}, spy:{en:'Guesthouse', zh:'民宿'} },
+  { category:{en:'Everyday things', zh:'日常物品'}, civ:{en:'Umbrella', zh:'雨傘'}, spy:{en:'Raincoat', zh:'雨衣'} },
+  { category:{en:'Everyday things', zh:'日常物品'}, civ:{en:'Phone', zh:'手機'}, spy:{en:'Tablet', zh:'平板'} },
+  { category:{en:'Everyday things', zh:'日常物品'}, civ:{en:'Guitar', zh:'吉他'}, spy:{en:'Ukulele', zh:'烏克麗麗'} },
+  { category:{en:'People & jobs', zh:'人物職業'}, civ:{en:'Doctor', zh:'醫生'}, spy:{en:'Nurse', zh:'護士'} },
+  { category:{en:'People & jobs', zh:'人物職業'}, civ:{en:'Teacher', zh:'老師'}, spy:{en:'Professor', zh:'教授'} },
+  { category:{en:'Activities', zh:'活動'}, civ:{en:'Basketball', zh:'籃球'}, spy:{en:'Volleyball', zh:'排球'} }
+];
+
+/* ---------------- story share banks ---------------- */
+const STORY_LIGHT = [
+  {en:"What's one moment from this year you'll actually remember?", zh:"今年有哪一個時刻你覺得你會一直記得？"},
+  {en:"What's something small that genuinely made you happy recently?", zh:"最近有什麼小事讓你真的很開心？"},
+  {en:"What's the last thing you watched, read, or listened to that really stayed with you?", zh:"最近看過、讀過或聽過什麼，讓你印象特別深？"},
+  {en:"What's something you've been looking forward to lately?", zh:"最近你有在期待什麼事嗎？"},
+  {en:"If you could instantly master one skill, what would it be and why?", zh:"如果你可以立刻精通一項技能，你想要什麼，為什麼？"},
+  {en:"What's a place that felt like home even though it wasn't yours?", zh:"有沒有一個地方，不是你家，但讓你有家的感覺？"},
+  {en:"What's something you've changed your mind about in the last few years?", zh:"這幾年你有沒有什麼想法或觀念改變了？"},
+  {en:"What's a small habit you've built that you're actually proud of?", zh:"你有沒有養成什麼小習慣，讓自己有點小驕傲？"},
+  {en:"What's something you miss that doesn't quite exist anymore?", zh:"有什麼東西你很懷念，但它已經不太存在了？"},
+  {en:"What's a compliment someone gave you that you've never forgotten?", zh:"有沒有一句稱讚，別人說過你到現在都還記得？"},
+  {en:"What's the last thing that made you laugh out loud by yourself?", zh:"你上次一個人大笑是因為什麼？"},
+  {en:"What's a city or neighborhood you'd live in if you could?", zh:"如果可以的話，你想住在哪個城市或哪個地方？"}
+];
+const STORY_PERSONAL = [
+  {en:"When was the last time you cried? What happened?", zh:"你上次哭是什麼時候？發生了什麼事？"},
+  {en:"What's a decision you made that quietly changed everything?", zh:"你做過哪個決定，悄悄改變了很多事情？"},
+  {en:"What's something you wish you'd said to someone, but didn't?", zh:"有沒有什麼話你本來想跟某個人說，但最後沒說出口？"},
+  {en:"What's something you've been carrying lately that you haven't told many people?", zh:"最近有沒有什麼事壓在你心裡，但還沒跟很多人說過？"},
+  {en:"Who's someone you think about more than they probably know?", zh:"你有沒有哪個人，你比他們以為的還常想到他？"},
+  {en:"What's one thing you'd do differently about the last five years?", zh:"如果可以重來，你會改變過去五年的一件什麼事？"},
+  {en:"What does a really good day look like for you right now?", zh:"對現在的你來說，一個真的很好的一天，長什麼樣子？"},
+  {en:"What's something you're proud of that you don't talk about much?", zh:"你有沒有什麼值得驕傲的事，但你平常很少提？"},
+  {en:"What's a belief you used to hold that you've slowly let go of?", zh:"你曾經很篤定的一個想法或信念，後來慢慢放下了嗎？"},
+  {en:"What's something about your current life that your past self would be surprised by?", zh:"你現在的生活裡，有什麼事是過去的自己大概想不到的？"},
+  {en:"What's a friendship that's shifted in a way you're still getting used to?", zh:"你有沒有哪段友誼，已經默默變了，但你還在適應中？"},
+  {en:"What's the most honest conversation you've had with yourself recently?", zh:"最近你有沒有跟自己有過一次很誠實的對話？"}
+];
+const STORY_DEEP = [
+  {en:"What's a version of yourself you've had to let go of?", zh:"你曾經放下過哪個版本的自己？"},
+  {en:"If your life right now were a chapter in a book, what would that chapter be called?", zh:"如果你的生活現在是一本書的一個章節，那個章節你會取什麼名字？"},
+  {en:"What do you wish people understood about you that they usually don't?", zh:"你希望別人能理解你的哪件事，但大部分人都不太懂？"},
+  {en:"What's something you're afraid to want, because you're not sure you'll get it?", zh:"有沒有什麼你很想要，但因為怕得不到，所以不太敢承認？"},
+  {en:"When do you feel most like yourself?", zh:"你什麼時候感覺最像真正的自己？"},
+  {en:"What does 'home' feel like to you right now — not a place, a feeling?", zh:"對現在的你來說，「家」是一種什麼樣的感覺——不是地點，是感受？"},
+  {en:"What's something you're still slowly healing from?", zh:"有什麼事你還在慢慢走出來？"},
+  {en:"What's the hardest thing you've done that no one gave you enough credit for?", zh:"你做過最難的一件事，但很少有人真的理解它有多不容易，是什麼？"},
+  {en:"What would you do differently if you knew you wouldn't be judged?", zh:"如果你知道沒有人會評判你，你會不一樣地做什麼？"},
+  {en:"What's something you've been telling yourself for a long time that might not be true?", zh:"你有沒有一句話跟自己說了很久，但其實它可能不是真的？"},
+  {en:"What are you most afraid of becoming?", zh:"你最怕自己變成什麼樣的人？"},
+  {en:"What does it feel like to be you, right now, at this point in your life?", zh:"現在這個階段，做你自己，是什麼感覺？"}
+];
+const HOT_SEAT_BANK = [
+  {en:"What's the most embarrassing thing that's happened to you in the last year?", zh:"過去這一年，發生在你身上最尷尬的事是什麼？"},
+  {en:"Who in this room do you think you'd still be friends with in 20 years?", zh:"這裡面，你覺得20年後你們還會是朋友的人是誰？"},
+  {en:"What's a lie you told recently that actually worked?", zh:"你最近說過什麼謊，還真的沒被拆穿？"},
+  {en:"What's the weirdest thing in your search history right now?", zh:"你現在搜尋紀錄裡最奇怪的東西是什麼？"},
+  {en:"What's something you'd never do again, no matter what?", zh:"有沒有什麼事你無論如何都不會再做第二次？"},
+  {en:"What do you think people's first impression of you usually is?", zh:"你覺得別人對你的第一印象通常是什麼？"},
+  {en:"What's a habit you have that other people in this room probably don't know about?", zh:"你有沒有什麼習慣，這裡面大概沒有人知道？"},
+  {en:"What's the most awkward thing that's happened to you this month?", zh:"這個月讓你最尷尬的事是什麼？"},
+  {en:"What's a compliment you secretly love getting?", zh:"有沒有什麼稱讚你很愛聽但不太會說出來？"},
+  {en:"What's something about yourself you'd change if you could?", zh:"如果可以，你最想改變自己的什麼？"},
+  {en:"What's the last thing you spent money on that you immediately regretted?", zh:"你上一次後悔的消費是什麼？"},
+  {en:"What's a rumor about you that was actually true?", zh:"曾經有關於你的傳言是真的嗎？是什麼？"},
+  {en:"What's a skill you pretend to have but actually don't?", zh:"你有沒有什麼技能，你裝懂但其實不太會？"},
+  {en:"What's something you've never admitted to this group?", zh:"有沒有什麼事，你從來沒跟這群人說過？"}
+];
+const FIRSTS_BANK = [
+  {en:"Your first concert — who was it and what do you remember?", zh:"你第一次去的演唱會——是誰的？你還記得什麼？"},
+  {en:"The first time you realized you were actually an adult.", zh:"你第一次感覺到自己真的長大了，是什麼時候？"},
+  {en:"Your first job — what did you learn that surprised you?", zh:"你的第一份工作——讓你意外學到了什麼？"},
+  {en:"The first time you traveled somewhere totally alone.", zh:"你第一次完全一個人去旅行是去哪裡？"},
+  {en:"The first meal you learned to cook from scratch.", zh:"你第一道從頭到尾自己學會做的料理是什麼？"},
+  {en:"The first friend you made completely outside your hometown or school circle.", zh:"你第一個完全不是老家或學校認識的朋友，是怎麼認識的？"},
+  {en:"The first time you said something you really meant and it actually changed things.", zh:"你第一次說出一句你真的很認真說的話，然後它真的改變了什麼事——是什麼時候？"},
+  {en:"Your first experience of feeling genuinely proud of yourself.", zh:"你第一次真的為自己感到驕傲，是因為什麼？"},
+  {en:"The first time you stood up for something, even when it was uncomfortable.", zh:"你第一次為某件事站出來，哪怕不太舒服，是什麼時候？"},
+  {en:"The first time a stranger was unexpectedly kind to you.", zh:"第一次有個陌生人出乎意料地對你很好，是什麼情況？"},
+  {en:"The first time you realized a friendship was more important than you'd thought.", zh:"你第一次發現某段友誼比你以為的更重要，是什麼時候？"},
+  {en:"Your first memory of feeling totally out of place — and what happened next.", zh:"你第一次感覺格格不入——後來呢？"}
+];
+const SIX_WORD_BANK = [
+  {en:"Your life right now.", zh:"你現在的生活。"},
+  {en:"The biggest thing you learned this year.", zh:"你今年最大的收穫。"},
+  {en:"What friendship means to you.", zh:"友情對你的意義。"},
+  {en:"Something you'd tell your younger self.", zh:"你想跟年輕時的自己說的一句話。"},
+  {en:"What you're actually working toward.", zh:"你現在真正在努力的目標。"},
+  {en:"Something you can't explain but feel.", zh:"你說不清楚但能感受到的一件事。"},
+  {en:"The last chapter of your life so far.", zh:"到目前為止，你人生最近這個章節。"},
+  {en:"What home means to you.", zh:"家對你的意義。"},
+  {en:"Who you are when no one's watching.", zh:"沒有人看的時候，你是誰。"},
+  {en:"Something you're still figuring out.", zh:"你還在想清楚的一件事。"}
+];
+
+/* ---------------- game data ---------------- */
+const GAMES = [
+{ min:6, max:20, tools:[], vibes:['party','family'], duration:[15,30], special:'mafia',
+  en:{ name:"Mafia", tag:"A hidden killer, a town full of suspects, and one chance to vote right.",
+    steps:["Tap \u201CPlay on this phone\u201D to assign Mafia and Townsfolk roles secretly.","Everyone closes their eyes while the Mafia silently picks a victim.","Open eyes, reveal who was \u2018killed,\u2019 then debate and vote out a suspect.","Repeat until the Mafia is caught or they outnumber the town."]},
+  zh:{ name:"殺手遊戲", tag:"一個藏在人群裡的兇手，一群滿是懷疑的玩家，一次投票定生死。",
+    steps:["開始後偷偷分配殺手跟平民的身分。","大家閉上眼睛，殺手悄悄選出一位「受害者」。","睜開眼睛公布被殺的人，接著大家討論並投票踢出一位嫌疑人。","重複進行，直到殺手被抓出來，或殺手人數超過平民。"]}},
+{ min:3, max:20, tools:[], vibes:['party','family','icebreaker'], duration:[10,15],
+  en:{ name:"Two Truths and a Lie", tag:"Three statements, one fib, and a group trying to catch it.",
+    steps:["Each person shares three statements about themselves, two true and one false.","The group discusses and votes on which one is the lie.","The player reveals the answer and tells the real story.","Pass to the next person."]},
+  zh:{ name:"兩真一假", tag:"說三件關於自己的事，其中一件是假的，看大家能不能抓出來。",
+    steps:["每個人說出三件關於自己的事，兩件真的、一件是編的。","大家討論並投票猜出哪一件是假的。","公布答案，順便聊聊背後真正的故事。","輪到下一個人繼續。"]}},
+{ min:2, max:10, tools:[], vibes:['family','party','icebreaker'], duration:[5,10],
+  en:{ name:"Twenty Questions", tag:"One mystery in someone's head, twenty questions to crack it.",
+    steps:["One player thinks of a person, place, or thing and keeps it secret.","Others take turns asking yes-or-no questions to narrow it down.","Keep a rough count, capping it around twenty questions.","Whoever guesses correctly picks the next secret."]},
+  zh:{ name:"二十問遊戲", tag:"心裡想一個東西，其他人用二十個問題把它問出來。",
+    steps:["一位玩家心裡想好一個人、地方或東西，先保密。","其他人輪流問是非題，慢慢縮小範圍。","大致控制在二十個問題以內。","猜中的人接著想下一個謎底。"]}},
+{ min:3, max:15, tools:[], vibes:['party','drinking','family'], duration:[15,30], deck:'truthdare', bank:{truths:TRUTH_BANK, dares:DARE_BANK},
+  en:{ name:"Truth or Dare", tag:"Pick Truth, get a real question. Pick Dare, get a real challenge — all generated right here.",
+    steps:["Tap \u201CPlay on this phone\u201D, then pick Truth or Dare to get a real prompt.","Truth means answering honestly, dare means actually doing it.","The group can veto a weak one and draw again.","Pass the phone to the next person and repeat."]},
+  zh:{ name:"真心話大冒險", tag:"選真心話就出真的問題，選大冒險就出真的挑戰——全部當場生成。",
+    steps:["開始後，選真心話或大冒險，App會出真正的題目。","真心話要誠實回答，大冒險要真的做到。","題目太弱可以投票否決，重新抽一個。","把手機交給下一位，繼續輪流。"]}},
+{ min:3, max:10, tools:[], vibes:['family','party','icebreaker'], duration:[8,12], deck:'single', bank:CATEGORIES_BANK,
+  en:{ name:"Categories", tag:"Pick a category, race the clock, never repeat an answer.",
+    steps:["Tap \u201CPlay on this phone\u201D for a random category.","Go around the group naming something in that category.","Anyone who repeats an answer or stalls too long is out.","Tap for a new category and start the next round."]},
+  zh:{ name:"分類接龍", tag:"喊出一個類別，輪流接龍，重複或卡住就出局。",
+    steps:["開始後抽一個隨機類別。","輪流接著說出屬於這個類別的東西。","重複答案或想太久的人出局。","換一個新類別，開始下一輪。"]}},
+{ min:6, max:15, tools:[], vibes:['party'], duration:[10,15],
+  en:{ name:"Wink Murder", tag:"A secret killer takes people out with a single wink.",
+    steps:["Pick one player as the detective and send them out briefly.","Secretly choose a \u2018murderer\u2019 from the rest of the group.","The murderer winks at people to \u2018kill\u2019 them when no one's watching.","The detective returns and tries to name the murderer before too many fall."]},
+  zh:{ name:"眨眼殺手", tag:"一個祕密殺手靠一個眨眼就能「殺人」。",
+    steps:["選一位玩家當偵探，請他先離開現場一下。","從剩下的人裡偷偷選出一位「殺手」。","殺手趁沒人注意時眨眼「殺掉」其他人。","偵探回來後，要在太多人「被殺」之前抓出殺手。"]}},
+{ min:6, max:20, tools:[], vibes:['family','party','icebreaker'], duration:[5,10], deck:'starter', bank:TELEPHONE_STARTERS,
+  en:{ name:"Telephone", tag:"Whisper a phrase down the line and watch it fall apart.",
+    steps:["Tap \u201CPlay on this phone\u201D for a starting phrase.","Whisper it once into the next person's ear, no repeats.","Pass it along until it reaches the last player.","Compare the final phrase to the original out loud."]},
+  zh:{ name:"傳話遊戲", tag:"一句話悄悄傳下去，看傳到最後變成什麼樣子。",
+    steps:["開始後抽一句起始句子。","悄悄傳到下一個人耳邊，只能說一次。","依序傳下去，直到傳到最後一位。","公布原話跟最後傳出來的版本，比較有多不一樣。"]}},
+{ min:2, max:20, tools:[], vibes:['family','party','icebreaker'], duration:[10,15], deck:'versus', bank:WOULD_RATHER_BANK,
+  en:{ name:"Would You Rather", tag:"Two terrible options, one impossible choice, freshly generated every round.",
+    steps:["Tap \u201CPlay on this phone\u201D for a fresh dilemma.","Everyone picks a side and explains their reasoning.","Settle disagreements with a quick vote, or just argue it out.","Tap for the next dilemma."]},
+  zh:{ name:"二選一", tag:"兩個都很難選的選項，逼你做出選擇，每輪都重新生成。",
+    steps:["開始後抽一個新的難題。","大家選邊站，並說出理由。","意見不合就投票決定，或乾脆吵一下。","按下一題，換新的兩難。"]}},
+{ min:3, max:15, tools:[], vibes:['family','party'], duration:[10,15], deck:'starter', bank:STORY_STARTERS,
+  en:{ name:"Story Round Robin", tag:"One story, built one sentence at a time, with a generated opening line.",
+    steps:["Tap \u201CPlay on this phone\u201D for an opening line.","Each following player adds exactly one sentence, building on the last.","No one is allowed to plan ahead or steer too hard.","Keep going until the story finds a natural, ridiculous ending."]},
+  zh:{ name:"接龍故事", tag:"一句接一句，故事完全沒有劇本，開場白由App生成。",
+    steps:["開始後抽一句開場白。","接下來每個人只能接一句，延續上一句的內容。","不能事先套招或硬要主導劇情。","故事自然走到一個荒謬的結局就收尾。"]}},
+{ min:3, max:15, tools:[], vibes:['party','family'], duration:[10,20], deck:'single', bank:NHIE_BANK,
+  en:{ name:"Never Have I Ever", tag:"Confess what you haven't done, and see who's done it instead.",
+    steps:["Each player holds up all ten fingers to start.","Tap \u201CPlay on this phone\u201D for a statement, read it out loud.","Anyone who has done it puts a finger down.","Tap for the next one and keep going."]},
+  zh:{ name:"我從來沒有", tag:"說出沒做過的事，看誰其實做過。",
+    steps:["每個人先伸出十根手指。","開始後抽一句話，唸出來。","做過的人收起一根手指。","按下一句，繼續玩下去。"]}},
+{ min:4, max:12, tools:['paper_pen'], vibes:['family','party'], duration:[15,20], deck:'revealone', bank:SKETCH_WORDS,
+  revealHint:{en:'Only the artist should look at the word.', zh:'只有畫的人自己看就好。'},
+  en:{ name:"Sketch & Guess", tag:"Draw the clue, skip the words, race the clock.",
+    steps:["Tap to reveal a secret word \u2014 only the artist should look.","Hide the word, then draw it on paper without writing letters or numbers.","Everyone else shouts guesses until someone gets it or time runs out.","Tap for a new word and pass the pencil to the next artist."]},
+  zh:{ name:"你畫我猜", tag:"用畫的猜題目，不能寫字，限時搶答。",
+    steps:["點一下看你的題目——只有畫的人自己看就好。","看完收起手機，在紙上把題目畫出來，不能寫字或數字。","其他人搶著喊答案，直到猜對或時間到。","換新題目，把畫筆交給下一位。"]}},
+{ min:3, max:8, tools:['paper_pen'], vibes:['party','family'], duration:[10,15],
+  en:{ name:"Exquisite Corpse", tag:"A collaborative drawing where nobody can see what came before.",
+    steps:["Fold a sheet of paper into sections, one per player.","Each player draws part of a creature in their section, then folds it to hide it, leaving a guide line showing.","Pass the paper to the next person, who continues from the visible line only.","Unfold the finished, mismatched creature at the end and reveal it together."]},
+  zh:{ name:"盲畫接龍", tag:"大家一起畫一隻怪物，但誰也看不到前面畫了什麼。",
+    steps:["把一張紙摺成幾段，人數多少就摺幾段。","每人在自己的段落畫怪物的一部分，畫完摺起來只留一點線條當提示。","把紙傳給下一位，只能照著露出來的線繼續畫。","最後展開整張紙，看看拼出來的怪物長什麼樣。"]}},
+{ min:4, max:10, tools:['paper_pen'], vibes:['party','family'], duration:[15,20], deck:'starter', bank:PAPER_TELEPHONE_STARTERS,
+  en:{ name:"Paper Telephone", tag:"A phrase becomes a drawing becomes a phrase, and it only gets weirder.",
+    steps:["Tap \u201CPlay on this phone\u201D for a starting phrase, written at the top of a sheet of paper.","Pass papers around, and the next person draws the phrase, no words.","Fold or cover the phrase, then pass again for someone to write what they see.","Keep alternating draw and describe, then reveal the whole chain at the end."]},
+  zh:{ name:"畫畫傳話", tag:"一句話變成一張畫，再變成另一句話，越傳越離奇。",
+    steps:["開始後抽一句開場句子，寫在紙的最上面。","把紙傳下去，下一個人只能用畫的方式表達這句話。","蓋住或摺起原本的句子，再傳給下一位寫出他看到的畫面。","輪流畫跟寫，最後把整串紙條攤開來看。"]}},
+{ min:5, max:30, tools:['paper_pen'], vibes:['family','party','icebreaker'], duration:[15,20], deck:'bingo', bank:BINGO_TRAITS,
+  en:{ name:"Human Bingo", tag:"A bingo card full of traits, generated fresh, and a room full of people to match.",
+    steps:["Tap \u201CPlay on this phone\u201D for a fresh bingo card of traits.","Mingle and find someone who matches each box, getting their name.","Tap a box once you've matched it.","First to complete a row, column, or full card wins."]},
+  zh:{ name:"人類賓果", tag:"App生成一張全新的賓果卡，去人群裡找出符合的人。",
+    steps:["開始後生成一張新的賓果卡。","到處走動，找到符合每格描述的人，記下他的名字。","找到就點一下那一格。","先連成一條線或填滿全部格子的人獲勝。"]}},
+{ min:2, max:8, tools:['cards'], vibes:['party','family'], duration:[10,20],
+  en:{ name:"Egyptian Ratscrew", tag:"Fast slaps, fast hands, and a deck that decides everything.",
+    steps:["Deal the deck evenly and stack each player's cards face down.","Take turns flipping your top card onto a shared center pile.","Slap the pile when a double, sandwich, or other called pattern appears.","Whoever slaps first takes the whole pile, and the last player with cards wins."]},
+  zh:{ name:"極速拍牌", tag:"手速決勝負，一副牌決定一切。",
+    steps:["平分整副牌，每人面前疊一疊牌面朝下。","輪流把自己最上面那張牌翻到中間共用的牌堆上。","出現指定的牌型（像對子或夾心牌）就搶拍牌堆。","先拍到的人收走整堆牌，最後手上還有牌的人獲勝。"]}},
+{ min:2, max:6, tools:['cards'], vibes:['family','party'], duration:[5,10],
+  en:{ name:"Speed Card Tower", tag:"Build the tallest tower before the deck runs out or it all comes crashing down.",
+    steps:["Split a deck evenly between players.","Race to build the tallest free-standing tower using only your cards.","No tape, no leaning on furniture, gravity only.","When time's up or a tower falls, whoever's standing tallest wins."]},
+  zh:{ name:"撲克塔競賽", tag:"用一副牌比賽蓋出最高的塔，純粹手快手穩。",
+    steps:["把一副牌平分給每位玩家。","限時比賽用手上的牌蓋出最高、能自己站立的塔。","不能用膠帶，也不能靠著家具，全靠重力平衡。","時間到或有塔倒了，當下最高的人獲勝。"]}},
+{ min:4, max:10, tools:['cards','cups'], vibes:['drinking'], duration:[20,40],
+  en:{ name:"Kings Cup", tag:"A ring of cards, a center cup, and a different rule for every draw.",
+    steps:["Spread the deck face down in a circle around a cup in the middle.","Take turns drawing a card and following its rule, like \u2018make a rule\u2019 or \u2018waterfall.\u2019","Pour a splash into the center cup for the cards that call for it.","Whoever draws the last king drinks the center cup."]},
+  zh:{ name:"國王杯（撲克牌）", tag:"牌圍成一圈，中間放一杯酒，每張牌都有自己的規則。",
+    steps:["把整副牌牌面朝下圍成一圈，中間放一個空杯子。","輪流抽一張牌，照牌面規則做動作，像「訂規則」或「瀑布」。","某些牌會要求往中間的杯子倒一點酒。","抽到最後一張國王的人，要喝掉中間那杯。"]}},
+{ min:3, max:6, tools:['dice'], vibes:['party','drinking'], duration:[15,30],
+  en:{ name:"Liar's Dice", tag:"Bluff your roll, call out a liar, and hope you're right.",
+    steps:["Each player rolls a set of dice secretly under a cup.","Take turns bidding on how many of a certain number exist across all dice.","Each bid must raise the previous one, until someone calls \u2018liar.\u2019","Reveal all dice \u2014 whoever's wrong loses a die, and the round resets."]},
+  zh:{ name:"骰子吹牛", tag:"用骰子唬人，叫別人「騙子」，賭一把看誰猜得準。",
+    steps:["每人在杯子底下偷偷搖出一組骰子。","輪流喊出你猜全場某個數字出現的數量，往上加碼。","每次喊的數量都要比前一個人多，直到有人喊「騙子」。","翻開所有骰子，猜錯的人少一顆骰子，重新開始下一輪。"]}},
+{ min:2, max:8, tools:['dice'], vibes:['family'], duration:[15,20],
+  en:{ name:"Dice Baseball", tag:"Roll the bases, run the score, no glove required.",
+    steps:["Assign each dice number to a baseball outcome, like 6 is a home run and 1 is an out.","Take turns rolling for your team and tracking runs and outs like a real inning.","Three outs ends your half-inning, then the other team rolls.","Play nine innings, or however many you've got patience for, and total the score."]},
+  zh:{ name:"骰子棒球", tag:"用骰子打一場棒球賽，不用手套也能玩。",
+    steps:["幫骰子的每個點數對應一個棒球結果，像六點是全壘打、一點是出局。","輪流幫自己的隊伍擲骰子，像真的棒球比賽一樣記分跟記出局數。","累積三個出局數，換對方擲骰子。","打完九局，或玩到大家盡興，加總比分定勝負。"]}},
+{ min:2, max:10, tools:['coin'], vibes:['party','family'], duration:[5,10],
+  en:{ name:"Coin Streak", tag:"Call it before it lands, and see how long your streak survives.",
+    steps:["Each player calls heads or tails before the coin is flipped.","Flip the coin \u2014 anyone who guessed right stays in for another round.","Keep flipping and eliminating wrong guesses each round.","Last player standing keeps their streak bragging rights."]},
+  zh:{ name:"猜硬幣連勝", tag:"先猜正反面，看你的連勝紀錄能撐多久。",
+    steps:["拋硬幣之前，每個人先猜正面或反面。","拋出結果，猜對的人留下，進入下一輪。","持續拋硬幣，淘汰猜錯的人。","最後留下的人，連勝紀錄最威。"]}},
+{ min:4, max:10, tools:[], vibes:['party','family'], duration:[10,15], deck:'revealone', bank:FOREHEAD_WORDS,
+  revealHint:{en:'Only someone other than the guesser should look — not the person holding the phone to their forehead.', zh:'只有不是猜題的人能看——拿著手機貼額頭的人不能看。'},
+  en:{ name:"Forehead Word Guess", tag:"The word's on your forehead — everyone else can see it but you.",
+    steps:["Pick one player as the guesser \u2014 they hold the phone facing outward against their forehead.","Someone else taps to reveal a word on screen (the guesser shouldn't look).","Teammates describe or act out the word without saying it, until the guesser gets it.","Tap for a new word and keep going until your patience runs out."]},
+  zh:{ name:"額頭猜字", tag:"答案就在你額頭上，大家看得到，只有你看不到。",
+    steps:["選一位玩家當猜題的人，把手機螢幕朝外貼在額頭上。","請另一位玩家（不是猜題的人）點一下螢幕看詞。","其他人用動作或描述讓猜題的人猜出來，但不能直接說出來。","猜對了就點一下換新的詞，繼續玩到大家盡興。"]}},
+{ min:6, max:20, tools:['cups'], vibes:['drinking'], duration:[10,20],
+  en:{ name:"Flip Cup", tag:"Drink, flip, pass, repeat \u2014 fastest line wins.",
+    steps:["Line up two teams on opposite sides of a table, one cup per player.","Each player fills their cup with a splash of a drink.","Drink, then flip the cup off the table edge so it lands upside down.","The next teammate goes once the cup lands \u2014 fastest team to finish wins."]},
+  zh:{ name:"翻杯遊戲", tag:"喝、翻、傳，看哪一隊速度最快。",
+    steps:["兩隊面對面站在桌子兩側，每人一個杯子。","每個杯子倒一小口飲料。","喝掉之後，把杯子從桌邊翻過去，讓它倒扣在桌上。","杯子倒扣成功，下一位隊友才能開始，先輪完的隊伍獲勝。"]}},
+{ min:4, max:10, tools:['bottle'], vibes:['party'], duration:[10,20],
+  en:{ name:"Spin the Bottle", tag:"One spin, one dare, decided by wherever the bottle stops.",
+    steps:["Sit in a circle with the bottle lying on its side in the center.","Take turns spinning it \u2014 whoever it points to gets a dare or question from the spinner.","Agree on a house rule for what a \u2018dare\u2019 covers before you start.","Keep spinning around the circle."]},
+  zh:{ name:"轉瓶子遊戲", tag:"轉一圈瓶子，瓶口指到誰，誰就接受挑戰。",
+    steps:["大家圍成一圈，把瓶子平放在中間。","輪流轉瓶子，瓶口指到的人要接受出題者的問題或挑戰。","開始前先講好「挑戰」的範圍，大家都同意。","繼續輪流轉下去。"]}},
+{ min:4, max:12, tools:['blindfold'], vibes:['family','party'], duration:[10,15],
+  en:{ name:"Blind Sound Guess", tag:"Eyes covered, ears open \u2014 guess what's making that noise.",
+    steps:["Blindfold one player and have the rest of the group make a sound, snap, clap, or say a word.","The blindfolded player points and guesses who made the sound.","Rotate the blindfold to a new player each round.","For a tougher version, everyone stays silent and shuffles position before each sound."]},
+  zh:{ name:"蒙眼猜聲音", tag:"閉上眼睛，靠耳朵猜出是誰發出的聲音。",
+    steps:["幫一位玩家戴上眼罩，其他人輪流發出聲音，像打響指、拍手或說一個字。","蒙眼的人指向他覺得是誰發出聲音的方向。","每輪換一個人戴眼罩。","想玩進階版，可以讓大家保持安靜並先換位置，再發出聲音。"]}},
+{ min:3, max:20, tools:[], vibes:['drinking','icebreaker'], duration:[10,15],
+  en:{ name:"3-6-9 Game (\uC0BC\uC721\uAD6C)", tag:"Count upward together \u2014 clap instead of saying any number with a 3, 6, or 9 in it.",
+    steps:["Sit in a circle and count upward together, one number per person.","Whenever a number contains a 3, 6, or 9, clap instead of saying it out loud.","Mess up the count or the clap, and you take a sip (or a penalty).","Restart the count from wherever it broke."]},
+  zh:{ name:"三六九遊戲（\uC0BC\uC721\uAD6C）", tag:"從一開始數數字，遇到含3、6、9的數字要拍手代替。",
+    steps:["大家圍成一圈，輪流從一開始數數字。","數字裡只要出現3、6或9，就用拍手代替說出口。","拍錯或喊錯數字的人喝一口（或接受處罰）。","從喊錯的地方重新開始數。"]}},
+{ min:3, max:15, tools:[], vibes:['drinking'], duration:[10,15],
+  en:{ name:"Baskin Robbins 31 (\uBC14\uC2A4\uD0A8\uB77C\uBE48\uC2A4 31)", tag:"Take turns counting up — say one to three numbers each turn, and don't be the one stuck with 31.",
+    steps:["Counting up from one, each player says one, two, or three consecutive numbers on their turn.","Keep going around, trying to maneuver the count so someone else lands on 31.","Whoever says \u201831\u2019 takes a sip (or a penalty).","Start the count over from one."]},
+  zh:{ name:"數到 31（\uBC14\uC2A4\uD0A8\uB77C\uBE48\uC2A4 31）", tag:"輪流數數字，每次最多接三個，誰喊到31就出局。",
+    steps:["從一開始輪流數數字，每人每次可以接一到三個連續數字。","輪流接下去，盡量算好讓對手喊到31。","喊到31的人喝一口（或接受處罰）。","從下一個人重新開始數。"]}},
+{ min:3, max:15, tools:[], vibes:['drinking','icebreaker'], duration:[5,10],
+  en:{ name:"Nunchi Game (\uB208\uCE58\uAC8C\uC784)", tag:"Call out numbers in any order — read the room, and don't clash with anyone else.",
+    steps:["With N players, everyone needs to call out the numbers 1 through N, one number per person.","There's no set order \u2014 it's all about reading the room and timing your call.","If two people call the same number at once, both drink and the round restarts.","Whoever never gets a number out before the round ends also drinks."]},
+  zh:{ name:"眼力遊戲（\uB208\uCE58\uAC8C\uC784）", tag:"靠默契喊數字，喊到一樣或太慢的人就輸了。",
+    steps:["假設有 N 位玩家，大家要依序喊出 1 到 N 的數字。","誰先喊、誰後喊沒有規定順序，全靠默契跟眼神。","兩人同時喊出一樣的數字，兩人都喝一口，重新開始。","最後沒喊到數字的人，也要喝一口。"]}},
+{ min:3, max:10, tools:[], vibes:['drinking'], duration:[10,15],
+  en:{ name:"Babo Game (\uBA85\uBC14\uC1A8\uAC8C\uC784)", tag:"Say one number, show a different one with your fingers — try not to short-circuit.",
+    steps:["One player calls out a number from one to five while holding up a different number of fingers.","The next player has to instantly call out the number that was shown with fingers, then flash a new number of their own.","Hesitate, say the wrong number, or show the wrong fingers, and you drink.","Keep going \u2014 it gets faster and messier every round."]},
+  zh:{ name:"傻瓜遊戲（\uBA85\uBC14\uC1A8\uAC8C\uC784）", tag:"嘴巴喊一個數字，手卻比另一個，超容易腦袋打結。",
+    steps:["一位玩家喊出 1 到 5 之間的一個數字，同時用手指比出另一個不同的數字。","下一位玩家要馬上喊出對方手指比出的數字，同時自己也比一個新數字。","喊錯、比錯或反應太慢的人喝一口。","輪流繼續，越快越容易出錯。"]}},
+{ min:3, max:12, tools:[], vibes:['drinking'], duration:[15,20], deck:'single', bank:IMAGE_GAME_BANK,
+  en:{ name:"Image Game (\uC774\uBA54\uC9C0 \uAC8C\uC784)", tag:"A prompt, a silent vote, and whoever gets pointed at the most drinks.",
+    steps:["Tap \u201CPlay on this phone\u201D for a random prompt, read it out loud.","Everyone silently points at whoever they think fits best \u2014 no discussing first.","Whoever gets pointed at the most takes a sip.","Tap for the next prompt."]},
+  zh:{ name:"印象遊戲（\uC774\uBA54\uC9C0 \uAC8C\uC784）", tag:"一個情境，一次無聲投票，被指最多次的人喝一口。",
+    steps:["開始後抽一個情境，唸出來。","大家同時指向覺得最符合的人，不能先討論。","被指最多次的人喝一口。","按下一題，換新情境。"]}},
+{ min:3, max:10, tools:['cups'], vibes:['drinking'], duration:[15,25],
+  en:{ name:"Titanic Game (\uD0C0\uC774\uD0C0\uB2C9 \uAC8C\uC784)", tag:"Float a shot glass in beer, pour a little at a time, and don't be the one who sinks it.",
+    steps:["Gently float an empty shot glass in a cup that's about half full of beer.","Take turns pouring a small splash of liquor into the floating shot glass.","Pour as little as you can get away with \u2014 whoever's pour sinks the glass has to drink the whole mixed cup.","Float a new shot glass and start the next round."]},
+  zh:{ name:"鐵達尼號遊戲（燒酒彈）", tag:"把酒杯小心放進啤酒裡，看誰那一倒讓它沉下去。",
+    steps:["把一個空酒杯輕輕放進裝了半杯啤酒的杯子裡，讓它浮著。","輪流往小酒杯裡倒一點點酒，盡量倒得少。","杯子沉下去的那一輪，輪到的人要喝掉整杯混合的酒。","重新放一個新的小酒杯，繼續下一輪。"]}},
+{ min:3, max:15, tools:['bottle'], vibes:['drinking'], duration:[10,15],
+  en:{ name:"Bottle Cap Game (\uBA70\uB69C\uAEC1 \uAC8C\uC784)", tag:"Straighten the loose ring on a bottle cap, flick it around, and see who snaps it.",
+    steps:["Open a bottle and keep the cap with its loose metal ring still attached.","Straighten the loose ring, then take turns flicking it with one finger.","Whoever finally snaps the ring off gets to assign a drink to anyone at the table.","Grab a fresh cap and start again."]},
+  zh:{ name:"瓶蓋彈彈遊戲（\uBA70\uB69C\uAEC1 \uAC8C\uC784）", tag:"扭開瓶蓋的鬆動部分，輪流彈，看誰把它弄斷。",
+    steps:["開一瓶飲料，留下瓶蓋上會鬆動的那個小鐵環。","把鬆動的部分扭直，輪流用手指彈它。","誰彈斷了那個小鐵環，就可以指定別人喝酒。","用新的瓶蓋繼續玩下一輪。"]}},
+{ min:4, max:20, tools:[], vibes:['party','icebreaker'], duration:[10,15],
+  en:{ name:"Orange Game", tag:"Chant the song, mime an orange with your body, throw it — the next person must go bigger and louder.",
+    steps:["Stand in a circle. One person starts chanting '오~렌지~ 오~렌지~ 오~렌지~ 오~렌지~' while using their hands and arms to mime making an imaginary orange — any size, any shape, as long as it feels like an orange.","On the final big '오!!' they throw the imaginary orange to someone else in the circle.","That person must catch it and immediately chant the song again — but their mime must be BIGGER and their voice must be LOUDER than the person before them. Keep escalating every round.","Anyone who fails to go bigger and louder than the previous person loses and takes a sip (or a penalty from the group)."]},
+  zh:{ name:"橘子遊戲", tag:"邊喊邊用身體比出一顆橘子，丟給別人——對方要比你更大聲、動作更大。",
+    steps:["大家圍成一圈。一個人開始唱「오~렌지~ 오~렌지~ 오~렌지~ 오~렌지~」，同時用手和手臂比劃出一顆想像中的橘子——大小形狀隨意，有橘子的感覺就行。","唱到最後一個大聲的「오!!」，把這顆想像中的橘子丟給圈子裡的另一個人。","接到的人要馬上重新唱這首歌，同時比出橘子——但動作要比丟給你的人更大，聲音也要更大聲。每一輪都要繼續升級。","沒辦法比上一個人更大聲、動作更大的人就輸了，要喝一口（或接受大家出的懲罰）。"]}},
+{ min:4, max:20, tools:[], vibes:['drinking','party'], duration:[10,15],
+  en:{ name:"007 Bang", tag:"Pass '0—0—7' around the circle, then bang — whoever you point at must duck.",
+    steps:["Sit in a circle. One player points at someone and says '0.' That person points at another and says '0.' The third person points at anyone and says '7.'","After '7,' anyone can shout 'Bang!' and point at someone. That target must duck immediately; their two neighbors must raise both hands.","Whoever reacts wrong — doesn't duck, forgets to raise a hand, or raises a hand when not targeted — takes a sip.","The round restarts from '0.'"]},
+  zh:{ name:"007邦", tag:"把「0—0—7」傳下去，喜完「Bang」就開楸，被指到的人要閃。",
+    steps:["大家圍成一圈。一位玩家指著某人喊「0」，那人指向下一人喊「0」，第三個人指向任何人喊「7」。","喊完「7」之後，任何人都可以喊「Bang！」並指向某人。被指到的人要馬上蹲下，左右兩邊的人要馬上舉手。","反應錯的人（忘記蹲、沒舉手，或不該舉手卻舉了）喝一口。","從「0」重新開始。"]}},
+{ min:4, max:20, tools:[], vibes:['party','icebreaker','drinking'], duration:[10,15],
+  en:{ name:"Finger Fold Game", tag:"Hold up 5 fingers and fold one down whenever a description matches you — first to run out loses.",
+    steps:["Everyone holds up one hand with all 5 fingers extended.","Take turns describing a characteristic that's true about yourself (e.g. 'People who have never cooked a meal'). Anyone else who matches must fold down one finger.","If it doesn't apply to you, keep your fingers up. The speaker folds too if it applies to them.","First to fold all 5 fingers loses and takes a penalty."]},
+  zh:{ name:"折手指遊戲", tag:"伸出五根手指，符合描述就收一根——先收完的人輸了。",
+    steps:["每個人伸出一隻手，五根手指全部張開。","輪流說一件關於自己的事（例如「從來沒有自己煮過飯的人」）。其他符合的人要收起一根手指。","跟你完全無關，手指保持不動。就算是說話的人，如果也符合也要收。","五根手指全部收完的人先輸，要接受懲罰。"]}},
+{ min:4, max:15, tools:[], vibes:['drinking','party'], duration:[10,15],
+  en:{ name:"Strawberry Game", tag:"Chant 'strawberry strawberry,' name someone with a number — they repeat it in rhythm or drink.",
+    steps:["All players chant 'strawberry strawberry' together in a steady rhythm.","Anyone then targets a player by calling their name and a number (e.g. 'Alex, three!').","Alex must immediately say 'strawberry' exactly three times, keeping the same rhythm. No hesitation.","Mess up the count or break the rhythm — drink. Everyone restarts the chant."]},
+  zh:{ name:"草莓遊戲", tag:"一起喊「草莓草莓」，點名加數字——被點的人要按節奏重複那麼多次。",
+    steps:["所有人一起按節奏喊「草莓、草莓」。","任何人可以點名某位玩家並喊出一個數字（例如「小明，三次！」）。","被點名的人要馬上說「草莓」剛好那個數字的次數，且要保持相同的節奏。不能猶豫。","喊錯次數或打斷節奏的人喝一口，大家重新開始喊「草莓草莓」。"]}},
+{ min:4, max:15, tools:[], vibes:['drinking','party'], duration:[10,15],
+  en:{ name:"Apartment Game", tag:"Stack hands, chant four times, call a floor — the matching hand drinks.",
+    steps:["Everyone stacks one hand palm-down in the center, one on top of the next.","Together, chant '아파트' (‘apartment’) four times while pointing both index fingers up then down in rhythm.","The dealer calls a floor number from 1 to however many hands are stacked. Count from the bottom — that hand's owner drinks.","Rotate the dealer and play again."]},
+  zh:{ name:"公寓遊戲", tag:"疊手、一起喜四次，喜出樓層——被點到的人喝酒。",
+    steps:["大家把一隻手手心朝下疊在中間，一層疊一層。","大家一起喊四次「아파트（公寓）」，同時雙手食指跟著節奏指上、指下。","莊家喊出一個樓層數字（從1到疊了幾層手）。從最下層數上去，那一層的人喝一口。","換下一位莊家，繼續玩。"]}},
+{ min:4, max:12, tools:[], vibes:['party','icebreaker'], duration:[15,25], special:'spy',
+  en:{ name:"Who's the Spy", tag:"Most players share a word. One or two get a sneaky lookalike — or nothing at all. Find them before they blend in.",
+    steps:["Tap \u201CPlay on this phone\u201D, pass it around so everyone sees their own word.","Most players share the same word \u2014 one or two secretly get a similar but different word (or a blank).","Going around the circle, each player says one sentence describing their word without saying it outright.","After everyone's gone once, vote out whoever you suspect."]},
+  zh:{ name:"誰是臥底", tag:"大部分人拿到同一個詞，一兩個人拿到相似卻不同的詞，甚至什麼都沒有。在他們混進來之前把他們找出來。",
+    steps:["開始後，輪流傳手機讓每個人看到自己的詞。","大部分人拿到同一個詞，一到兩位玩家會拿到相似但不同的詞（或白板）。","輪流用一句話描述自己的詞，但不能直接說出來。","輪完一輪後投票踢出可疑的人。"]}},
+
+{ min:2, max:10, tools:[], vibes:['party','family'], duration:[5,10], deck:'starter', bank:WORD_CHAIN_STARTERS,
+  en:{ name:"Word Chain Duel", tag:"One word leads to the next. Hesitate or repeat, and you're out.",
+    steps:["Tap \u201CPlay on this phone\u201D for a starting word.","Going around the circle, each player says a word connected to the last one, by sound, meaning, or category.","Hesitate too long, repeat a word, or get challenged and can't explain the link, and you're out.","Last player remaining wins. Tap for a new starting word and play again."]},
+  zh:{ name:"詞語接龍對決", tag:"一個詞接著一個詞，卡住或重複就淘汰。",
+    steps:["開始後抽一個起始詞。","輪流接著說一個跟上一個詞有關的詞，可以靠發音、意思或類別連結。","想太久、重複別人說過的詞，或被問到說不出關聯，就出局。","留到最後的人獲勝。按下一個重新抽起始詞再玩一輪。"]}},
+{ min:3, max:15, tools:[], vibes:['party'], duration:[10,15], special:'bomb',
+  en:{ name:"Hot Potato", tag:"A category, a hidden timer, and a phone that's getting hotter by the second.",
+    steps:["Tap to start — the app picks a category and begins a hidden countdown.","Pass the phone around — whoever's holding it names something in the category and taps Next to pass.","The countdown is random, so nobody knows how long is left.","Whoever's holding the phone when it 'explodes' is out (or drinks) — start a new round."]},
+  zh:{ name:"燙手山芋", tag:"一個類別，一個藏起來的倒數，手機越傳越「燙」。",
+    steps:["點一下開始——App會選一個類別，開始一個藏起來的倒數計時。","把手機輪流傳下去，輪到的人說出類別裡的一個東西，然後按「傳給下一位」傳出去。","倒數時間是隨機的，沒有人知道還剩多少時間。","手機「爆炸」的時候，正拿著它的人出局（或喝一口），可以重新開始下一輪。"]}},
+
+{ min:2, max:12, tools:[], vibes:['icebreaker','party','family'], duration:[20,40], deck:'storyshare', bank:{light:STORY_LIGHT, personal:STORY_PERSONAL, deep:STORY_DEEP},
+  en:{ name:"Open Book", tag:"Draw a card. Share something real. Catch up the way you actually meant to.",
+    steps:["Everyone sits in a circle. Choose a level — Light, Personal, or Deep.","Someone draws a card and reads it aloud. Take a moment, then share your answer honestly.","No pressure to go long. The goal is to say something true, not something impressive.","Go around the group. Anyone can pass, but nothing is off the table."]},
+  zh:{ name:"開卷", tag:"抽一張牌，說一件真的事。用你本來就想聊的方式，好好重聚。",
+    steps:["大家圍成一圈坐好。選一個深度——輕鬆、有點私、或者很深。","有人抽一張牌，唸出來。停一下，然後誠實地分享你的答案。","不用說很長。重點是說一件真的事，不是說得多好聽。","輪流發言。任何人都可以跳過，但什麼都可以說。"]}},
+
+{ min:3, max:12, tools:[], vibes:['party','icebreaker'], duration:[15,25], deck:'hotseat', bank:HOT_SEAT_BANK,
+  en:{ name:"Hot Seat", tag:"One person in the spotlight, rapid-fire questions from the whole group.",
+    steps:["Choose one player to sit in the 'hot seat' — they're the focus for this round.","The group draws questions from the app and fires them one by one.","The hot seat player answers honestly. They can skip two questions per round.","After 5 questions (or when the group decides), rotate to the next person."]},
+  zh:{ name:"Hot Seat", tag:"一個人坐在聚光燈下，接受全場的快問快答。",
+    steps:["選一位玩家坐上「熱椅」——這一輪的焦點就是他。","其他人從App抽題目，一題一題地問。","熱椅玩家誠實回答，每輪可以跳過兩題。","答完五題（或大家覺得差不多了），換下一位坐上來。"]}},
+
+{ min:3, max:15, tools:[], vibes:['icebreaker','family'], duration:[15,25], deck:'single', bank:FIRSTS_BANK,
+  en:{ name:"Firsts", tag:"Share a memorable 'first' — the stories you don't usually lead with.",
+    steps:["Draw a card — it names a type of 'first' experience.","Each person in the group shares their version of that first.","Don't just state the fact. Tell the small detail that made it stick.","Draw another card and go again."]},
+  zh:{ name:"第一次", tag:"分享一個難忘的「第一次」——那些你平常不會先說的故事。",
+    steps:["抽一張牌——牌上寫著一種「第一次」的經驗。","每個人輪流分享自己的那一個第一次。","不只說事實，說一個讓你記住這件事的小細節。","再抽一張，繼續玩下去。"]}},
+
+{ min:3, max:15, tools:[], vibes:['icebreaker','family'], duration:[15,20],
+  en:{ name:"Rose, Thorn, Bud", tag:"One good thing, one hard thing, one thing on the horizon — go around the circle.",
+    steps:["Everyone shares three things in turn: a Rose (something positive recently), a Thorn (something challenging), and a Bud (something you're hoping for or looking forward to).","Go around the circle once — there's no judging, no fixing, just listening.","After everyone shares, the group can ask one follow-up question per person if they want to know more.","Works best if you're honest, not just upbeat."]},
+  zh:{ name:"玫瑰荊棘花苞", tag:"一件好事、一件難事、一件正在期待的事——輪流說說看。",
+    steps:["每個人輪流分享三件事：玫瑰（最近一件好的事）、荊棘（一件有點挑戰的事），以及花苞（你正在期待或希望的事）。","輪一輪——不評判，不提意見，只是好好聽。","每個人分享完之後，其他人可以問一個後續問題，如果想多了解的話。","越誠實越好，不用只說好聽的。"]}},
+
+{ min:3, max:12, tools:[], vibes:['icebreaker','party','family'], duration:[15,20], deck:'single', bank:SIX_WORD_BANK,
+  en:{ name:"Six Word Memoirs", tag:"One theme. Six words. You'd be surprised how much you can say.",
+    steps:["Draw a card — it gives you a theme or prompt.","Everyone writes or thinks of exactly six words that capture their take on that theme.","Go around and share your six words, then explain them if you want to.","The group votes on their favorite, then draw the next card."]},
+  zh:{ name:"六個字的故事", tag:"一個主題，六個字，你會驚訝自己能說出多少東西。",
+    steps:["抽一張牌——上面有一個主題或提示。","每個人寫下或想出剛好六個字，表達你對這個主題的感受或想法。","輪流說出你的六個字，想的話可以稍微解釋一下。","大家投票選最喜歡的那一個，然後再抽下一張。"]}}
+];
+
+/* ---------------- state ---------------- */
+const state = { players: 6, tools: new Set(), vibes: new Set(), lang: 'en' };
+let deckQueue = [];
+let deckIndex = 0;
+let filterPanelOpen = false;
+
+function shuffleArray(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ---------------- build controls ---------------- */
+const toolChipsEl = document.getElementById('toolChips');
+const vibePillsEl = document.getElementById('vibePills');
+
+function buildToolChips(){
+  toolChipsEl.innerHTML = '';
+  TOOL_META.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (state.tools.has(t.key) ? ' active' : '');
+    btn.type = 'button';
+    btn.setAttribute('aria-pressed', state.tools.has(t.key) ? 'true' : 'false');
+    btn.innerHTML = ICONS[t.key] + '<span>' + (state.lang === 'zh' ? t.label_zh : t.label) + '</span>';
+    btn.addEventListener('click', () => {
+      if (state.tools.has(t.key)) state.tools.delete(t.key); else state.tools.add(t.key);
+      btn.classList.toggle('active');
+      btn.setAttribute('aria-pressed', state.tools.has(t.key) ? 'true' : 'false');
+      recomputeDeck();
+    });
+    toolChipsEl.appendChild(btn);
+  });
+}
+
+function buildVibePills(){
+  vibePillsEl.innerHTML = '';
+  VIBE_META.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'vibe-pill' + (state.vibes.has(v.key) ? ' active' : '');
+    btn.type = 'button';
+    btn.dataset.vibe = v.key;
+    btn.setAttribute('aria-pressed', state.vibes.has(v.key) ? 'true' : 'false');
+    btn.textContent = state.lang === 'zh' ? v.label_zh : v.label;
+    btn.addEventListener('click', () => {
+      if (state.vibes.has(v.key)) state.vibes.delete(v.key); else state.vibes.add(v.key);
+      btn.classList.toggle('active');
+      btn.setAttribute('aria-pressed', state.vibes.has(v.key) ? 'true' : 'false');
+      recomputeDeck();
+    });
+    vibePillsEl.appendChild(btn);
+  });
+}
+
+const playerCountEl = document.getElementById('playerCount');
+document.getElementById('minus').addEventListener('click', () => {
+  state.players = Math.max(2, state.players - 1);
+  playerCountEl.textContent = state.players;
+  recomputeDeck();
+});
+document.getElementById('plus').addEventListener('click', () => {
+  state.players = Math.min(30, state.players + 1);
+  playerCountEl.textContent = state.players;
+  recomputeDeck();
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  state.players = 6; state.tools.clear(); state.vibes.clear();
+  playerCountEl.textContent = 6;
+  buildToolChips(); buildVibePills();
+  recomputeDeck();
+});
+
+document.getElementById('findGamesBtn').addEventListener('click', () => {
+  recomputeDeck();
+  const panel = document.getElementById('resultsPanel');
+  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+/* ---------------- filtering & deck ---------------- */
+function getMatches(){
+  return GAMES.filter(g => {
+    const playerOK = state.players >= g.min && state.players <= g.max;
+    const toolsOK = g.tools.every(t => state.tools.has(t));
+    const vibeOK = state.vibes.size === 0 || g.vibes.some(v => state.vibes.has(v));
+    return playerOK && toolsOK && vibeOK;
+  });
+}
+
+function recomputeDeck(){
+  deckQueue = shuffleArray(getMatches());
+  deckIndex = 0;
+  renderRightPanel();
+}
+
+function toolTagsHTML(g, s){
+  if (g.tools.length === 0) return '<span class="tool-tag none">' + s.noTools + '</span>';
+  return g.tools.map(t => {
+    const meta = TOOL_META.find(m => m.key === t);
+    return '<span class="tool-tag">' + ICONS[t] + '<span>' + (state.lang === 'zh' ? meta.label_zh : meta.label) + '</span></span>';
+  }).join('');
+}
+function vibeTagsHTML(g){
+  return g.vibes.map(v => {
+    const meta = VIBE_META.find(m => m.key === v);
+    return '<span class="vibe-tag ' + v + '">' + (state.lang === 'zh' ? meta.label_zh : meta.label) + '</span>';
+  }).join('');
+}
+
+/* ---- right panel ---- */
+function renderRightPanel(){ renderBrowseScreen(); }
+
+function aiSectionHTML(){
+  const isZh = state.lang === 'zh';
+  return '<div class="ai-section">' +
+    '<div class="ai-divider"><span>' + (isZh ? '\u6216\u8005' : 'or') + '</span></div>' +
+    '<p class="ai-section-label">' + (isZh ? '\u6211\u5011\u70BA\u4F60\u5373\u8208\u5275\u4F5C\u4E00\u500B\u5168\u65B0\u904A\u6232' : 'We will invent something new for you') + '</p>' +
+    '<button class="ai-generate-btn" id="aiGenerateBtn" type="button">\u2728 ' + (isZh ? 'AI \u5373\u8208\u5275\u4F5C' : 'AI Generate') + '</button>' +
+  '</div>';
+}
+
+function bindAiBtn(){ document.getElementById('aiGenerateBtn').addEventListener('click', instantPlay); }
+
+function renderBrowseScreen(){
+  const s = STR[state.lang];
+  const panel = document.getElementById('resultsPanel');
+  const matchHtml = s.browse.matchCount(deckQueue.length);
+
+  if (deckQueue.length === 0){
+    panel.innerHTML =
+      '<div class="empty-state"><h3>' + s.emptyTitle + '</h3><p>' + s.emptyText + '</p>' +
+        '<button id="emptyResetBtn" type="button">' + s.emptyReset + '</button></div>' +
+      aiSectionHTML();
+    document.getElementById('emptyResetBtn').addEventListener('click', () => document.getElementById('resetBtn').click());
+    bindAiBtn();
+    return;
+  }
+
+  if (deckIndex >= deckQueue.length){
+    panel.innerHTML =
+      '<div class="end-state"><h3>' + s.endTitle + '</h3><p>' + s.endText + '</p>' +
+        '<button id="endReshuffleBtn" type="button">' + s.reshuffle + '</button></div>' +
+      aiSectionHTML();
+    document.getElementById('endReshuffleBtn').addEventListener('click', () => { deckQueue = shuffleArray(getMatches()); deckIndex = 0; renderBrowseScreen(); });
+    bindAiBtn();
+    return;
+  }
+
+  panel.innerHTML =
+    '<div class="deck-header">' +
+      '<p class="match-count" aria-live="polite">' + matchHtml + '</p>' +
+      '<button class="see-all-link" id="seeAllBtn" type="button">' + s.allGames + '</button>' +
+    '</div>' +
+    '<div class="swipe-area">' +
+      '<div class="swipe-stack" id="swipeStack">' +
+        '<div class="stack-deco d2"></div>' +
+        '<div class="stack-deco d1"></div>' +
+      '</div>' +
+      '<div class="swipe-controls">' +
+        '<button class="swipe-btn skip" id="swipeSkip" type="button" aria-label="Skip">\u2715</button>' +
+        '<button class="swipe-btn play" id="swipePlay" type="button" aria-label="See details">\u2713</button>' +
+      '</div>' +
+      '<button class="reshuffle-link" id="reshuffleBtn" type="button">' + s.reshuffle + '</button>' +
+    '</div>' +
+    aiSectionHTML();
+
+  document.getElementById('reshuffleBtn').addEventListener('click', () => { deckQueue = shuffleArray(getMatches()); deckIndex = 0; renderBrowseScreen(); });
+  document.getElementById('swipeSkip').addEventListener('click', triggerSkip);
+  document.getElementById('swipePlay').addEventListener('click', triggerReveal);
+  document.getElementById('seeAllBtn').addEventListener('click', openAllGamesModal);
+  bindAiBtn();
+
+  renderSwipeCard();
+}
+
+function renderSwipeCard(){
+  const s = STR[state.lang];
+  const stack = document.getElementById('swipeStack');
+  if (!stack) return;
+  const old = document.getElementById('topSwipeCard');
+  if (old) old.remove();
+  if (deckIndex >= deckQueue.length){ renderBrowseScreen(); return; }
+  const g = deckQueue[deckIndex];
+  stack.insertAdjacentHTML('beforeend', swipeCardHTML(g, s));
+  attachDragHandlers(document.getElementById('topSwipeCard'));
+}
+
+function swipeCardHTML(g, s){
+  const t = g[state.lang];
+  const playersText = g.min + (g.max !== g.min ? '\u2013' + g.max : '') + ' ' + s.playersUnit;
+  const durationText = g.duration[0] + (g.duration[1] !== g.duration[0] ? '\u2013' + g.duration[1] : '') + ' ' + s.minUnit;
+  return '<div class="swipe-card" id="topSwipeCard">' +
+    '<span class="overlay-stamp like" id="stampLike">' + (state.lang === 'zh' ? '\u770B\u770B' : 'INFO') + '</span>' +
+    '<span class="overlay-stamp nope" id="stampNope">' + (state.lang === 'zh' ? '\u8DF3\u904E' : 'SKIP') + '</span>' +
+    '<div class="sc-top">' +
+      '<div class="badges-group"><span class="players-badge">' + playersText + '</span><span class="duration-badge">' + durationText + '</span></div>' +
+      '<div class="vibe-tags">' + vibeTagsHTML(g) + '</div>' +
+    '</div>' +
+    '<h3 class="sc-title">' + t.name + '</h3>' +
+    '<p class="sc-tag">' + t.tag + '</p>' +
+    '<div class="tools-row">' + toolTagsHTML(g, s) + '</div>' +
+    '<p class="sc-hint">' + s.tapHint + '</p>' +
+  '</div>';
+}
+
+function attachDragHandlers(card){
+  let dragging = false, startX = 0, dx = 0;
+  const getLikeStamp = () => card.querySelector('#stampLike');
+  const getNopeStamp = () => card.querySelector('#stampNope');
+  function onDown(e){ dragging = true; startX = e.clientX; dx = 0; card.classList.add('dragging'); card.setPointerCapture && e.pointerId != null && card.setPointerCapture(e.pointerId); }
+  function onMove(e){
+    if (!dragging) return;
+    dx = e.clientX - startX;
+    card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / 18) + 'deg)';
+    const intensity = Math.min(Math.abs(dx) / 100, 1);
+    if (dx > 12){ getLikeStamp().style.opacity = intensity; getNopeStamp().style.opacity = 0; }
+    else if (dx < -12){ getNopeStamp().style.opacity = intensity; getLikeStamp().style.opacity = 0; }
+    else { getLikeStamp().style.opacity = 0; getNopeStamp().style.opacity = 0; }
+  }
+  function onUp(){
+    if (!dragging) return;
+    dragging = false;
+    card.classList.remove('dragging');
+    if (dx > 100) triggerReveal();
+    else if (dx < -100) triggerSkip();
+    else { card.style.transform = ''; getLikeStamp().style.opacity = 0; getNopeStamp().style.opacity = 0; }
+  }
+  card.addEventListener('pointerdown', onDown);
+  card.addEventListener('pointermove', onMove);
+  card.addEventListener('pointerup', onUp);
+  card.addEventListener('pointercancel', onUp);
+}
+
+function triggerSkip(){
+  const card = document.getElementById('topSwipeCard');
+  if (!card || !card.classList.contains('swipe-card')) return;
+  card.classList.add('fly-left');
+  setTimeout(() => { deckIndex++; renderBrowseScreen(); }, 220);
+}
+function triggerReveal(){
+  const card = document.getElementById('topSwipeCard');
+  if (!card || !card.classList.contains('swipe-card')) return;
+  const game = deckQueue[deckIndex];
+  card.classList.add('fly-right');
+  setTimeout(() => { deckIndex++; openDescriptionModal(game); }, 220);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('gameModal').classList.contains('hidden')){
+    if (e.key === 'ArrowLeft') triggerSkip();
+    if (e.key === 'ArrowRight') triggerReveal();
+  }
+});
+
+/* ---- description modal (swipe right → this, then "Play" → game content) ---- */
+function openDescriptionModal(game){
+  const s = STR[state.lang];
+  const ds = s.desc;
+  const t = game[state.lang];
+  const playersText = game.min + (game.max !== game.min ? '\u2013' + game.max : '') + ' ' + s.playersUnit;
+  const durationText = game.duration[0] + (game.duration[1] !== game.duration[0] ? '\u2013' + game.duration[1] : '') + ' ' + s.minUnit;
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<div class="badges-group" style="margin-bottom:12px;">' +
+      '<span class="players-badge">' + playersText + '</span>' +
+      '<span class="duration-badge">' + durationText + '</span>' +
+      '<div class="vibe-tags" style="display:inline-flex;">' + vibeTagsHTML(game) + '</div>' +
+    '</div>' +
+    '<h3 class="modal-title">' + t.name + '</h3>' +
+    '<p style="font-size:14px;color:var(--ink-soft);margin:-6px 0 16px;">' + t.tag + '</p>' +
+    '<div class="modal-speak-row"><button class="speak-btn" id="mSpeak" type="button" title="Read aloud">\uD83D\uDD0A</button></div>' +
+    '<p class="modal-label" style="margin-bottom:10px;">' + ds.rulesTitle + '</p>' +
+    '<ol class="rules-steps">' + t.steps.map(st => '<li>' + st + '</li>').join('') + '</ol>' +
+    '<button class="modal-btn-primary" id="mPlayBtn" type="button">' + ds.playBtn + ' \u2192</button>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('mSpeak').addEventListener('click', () => speakNow(t.name + '. ' + t.steps.join('. ')));
+  document.getElementById('mPlayBtn').addEventListener('click', () => { closeModal(); openGameModal(game); });
+  openModalShell();
+}
+
+function getApiKey(){ return localStorage.getItem('gnf_api_key') || ''; }
+function saveApiKey(k){ localStorage.setItem('gnf_api_key', k.trim()); }
+
+function promptApiKey(onSave){
+  const isZh = state.lang === 'zh';
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">×</button>' +
+    '<span class="ai-badge">✨ ' + (isZh ? 'AI 設定' : 'AI Setup') + '</span>' +
+    '<h3 class="modal-title" style="margin-top:10px;">' + (isZh ? '貼上你的 API Key' : 'Enter your API key') + '</h3>' +
+    '<p class="api-key-note">' +
+      (isZh
+        ? '你的 Key 只存在你自己的瀏覽器裡（localStorage），不會傳給任何伺服器。前往 <strong>console.anthropic.com</strong> 取得。'
+        : 'Your key is stored only in your browser (localStorage) and never sent anywhere else. Get one at <strong>console.anthropic.com</strong>.') +
+    '</p>' +
+    '<input class="api-key-input" id="apiKeyInput" type="password" placeholder="sk-ant-…" autocomplete="off" />' +
+    '<button class="modal-btn-primary" id="apiKeySave" type="button">' + (isZh ? '儲存並生成' : 'Save & Generate') + '</button>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + STR[state.lang].closeBtn + '</button>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('apiKeySave').addEventListener('click', () => {
+    const val = document.getElementById('apiKeyInput').value.trim();
+    if (!val){ document.getElementById('apiKeyInput').focus(); return; }
+    saveApiKey(val);
+    closeModal();
+    setTimeout(onSave, 80);
+  });
+  document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('apiKeySave').click();
+  });
+  openModalShell();
+}
+
+function instantPlay(){
+  const key = getApiKey();
+  if (!key){ promptApiKey(instantPlay); return; }
+
+  // Show loading modal
+  const loadingMsgs = state.lang === 'zh'
+    ? ['AI 正在設計遊戲規則…', '想想你們有幾個人…', '加點創意進去…', '快好了…']
+    : ['Thinking up something new…', 'Designing the rules…', 'Adding a twist…', 'Almost there…'];
+  let msgIdx = 0;
+  gameModalBox.innerHTML =
+    '<div class="ai-loading">' +
+      '<div class="spinner"></div>' +
+      '<p id="aiLoadingMsg">' + loadingMsgs[0] + '</p>' +
+    '</div>';
+  openModalShell();
+
+  const msgTimer = setInterval(() => {
+    msgIdx = (msgIdx + 1) % loadingMsgs.length;
+    const el = document.getElementById('aiLoadingMsg');
+    if (el) el.textContent = loadingMsgs[msgIdx];
+  }, 1800);
+
+  const toolLabels = state.tools.size > 0
+    ? [...state.tools].map(k => TOOL_META.find(m => m.key === k).label).join(', ')
+    : 'no physical tools — just people';
+  const vibeLabels = state.vibes.size > 0
+    ? [...state.vibes].map(k => VIBE_META.find(m => m.key === k).label).join(', ')
+    : 'general party';
+
+  const prompt =
+`You are designing a brand-new social party game. Create something completely original — not a copy of any existing published game.
+
+Constraints:
+- Players: exactly ${state.players}
+- Available physical tools: ${toolLabels}
+- Tone/vibe: ${vibeLabels}
+- Must be playable SEATED INDOORS with no one leaving the room
+- Simple rules: 3–5 steps max
+- Duration: 10–25 minutes
+- Fun, light, and social
+
+Return ONLY a raw JSON object — no markdown fences, no explanation, no extra text:
+{
+  "name_en": "...",
+  "name_zh": "...(繁體中文)...",
+  "tag_en": "One punchy hook sentence under 80 chars",
+  "tag_zh": "一句吸引人的標語，80字以內（繁體中文）",
+  "steps_en": ["Step 1", "Step 2", "Step 3"],
+  "steps_zh": ["步驟一", "步驟二", "步驟三"],
+  "duration_min": 10,
+  "duration_max": 20
+}`;
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-allow-browser': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+  .then(r => {
+    if (r.status === 401){ clearInterval(msgTimer); localStorage.removeItem('gnf_api_key'); renderAIError(true); return null; }
+    return r.json();
+  })
+  .then(data => {
+    if (!data) return;
+    clearInterval(msgTimer);
+    const raw = (data.content || []).map(i => i.text || '').join('');
+    const clean = raw.replace(/```json[\s\S]*?```|```/g, '').trim();
+    const game = JSON.parse(clean);
+    renderAIGame(game);
+  })
+  .catch(() => {
+    clearInterval(msgTimer);
+    renderAIError(false);
+  });
+}
+
+function renderAIGame(game){
+  const s = STR[state.lang];
+  const name = state.lang === 'zh' ? (game.name_zh || game.name_en) : (game.name_en || game.name_zh);
+  const tag  = state.lang === 'zh' ? (game.tag_zh  || game.tag_en)  : (game.tag_en  || game.tag_zh);
+  const steps = state.lang === 'zh' ? (game.steps_zh || game.steps_en) : (game.steps_en || game.steps_zh);
+  const dur = (game.duration_min || 10) + '–' + (game.duration_max || 20) + ' ' + s.minUnit;
+  const pLabel = state.players + ' ' + s.playersUnit;
+
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<span class="ai-badge">\u2728 ' + (state.lang === 'zh' ? 'AI 即興創作' : 'AI Generated') + '</span>' +
+    '<div class="badges-group" style="margin-bottom:12px;">' +
+      '<span class="players-badge">' + pLabel + '</span>' +
+      '<span class="duration-badge">' + dur + '</span>' +
+    '</div>' +
+    '<h3 class="modal-title">' + name + '</h3>' +
+    '<p style="font-size:14px;color:var(--ink-soft);margin:-6px 0 16px;">' + tag + '</p>' +
+    '<div class="modal-speak-row"><button class="speak-btn" id="mSpeak" type="button" title="Read aloud">\uD83D\uDD0A</button></div>' +
+    '<ol class="rules-steps">' + (steps || []).map(st => '<li>' + st + '</li>').join('') + '</ol>' +
+    '<button class="modal-btn-primary" id="aiAgain" type="button">' +
+      (state.lang === 'zh' ? '\uD83C\uDFB2 再生成一個' : '\uD83C\uDFB2 Generate another') +
+    '</button>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('mSpeak').addEventListener('click', () => speakNow(name + '. ' + (steps || []).join('. ')));
+  document.getElementById('aiAgain').addEventListener('click', () => { closeModal(); setTimeout(instantPlay, 80); });
+}
+
+function renderAIError(isAuthError){
+  const s = STR[state.lang];
+  const isZh = state.lang === 'zh';
+  const msg = isAuthError
+    ? (isZh ? 'API Key 無效，請重新輸入。' : 'Invalid API key — please enter a new one.')
+    : (isZh ? '生成失敗，請再試一次。' : 'Generation failed — please try again.');
+  const retryLabel = isAuthError
+    ? (isZh ? '更新 Key' : 'Update key')
+    : (isZh ? '重試' : 'Retry');
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">×</button>' +
+    '<div class="ai-error">' +
+      '<p style="font-size:28px;margin:0 0 8px;">🎲</p>' +
+      '<p>' + msg + '</p>' +
+      '<button class="modal-btn-primary" id="aiRetry" type="button">' + retryLabel + '</button>' +
+    '</div>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('aiRetry').addEventListener('click', () => {
+    closeModal();
+    if (isAuthError) setTimeout(() => promptApiKey(instantPlay), 80);
+    else setTimeout(instantPlay, 80);
+  });
+}
+
+/* ---------------- all games list modal ---------------- */
+function openAllGamesModal(){
+  const s = STR[state.lang];
+  const sorted = GAMES.slice().sort((a, b) => {
+    const na = a[state.lang].name.toLowerCase(), nb = b[state.lang].name.toLowerCase();
+    return na < nb ? -1 : na > nb ? 1 : 0;
+  });
+  const rows = sorted.map((g, i) => {
+    const t = g[state.lang];
+    const playersText = g.min + (g.max !== g.min ? '–' + g.max : '') + ' ' + s.playersUnit;
+    const vibes = g.vibes.map(v => {
+      const m = VIBE_META.find(x => x.key === v);
+      return '<span class="vibe-tag ' + v + '">' + (state.lang === 'zh' ? m.label_zh : m.label) + '</span>';
+    }).join('');
+    return '<div class="game-list-item" data-gi="' + i + '">' +
+      '<span class="game-list-name">' + t.name + '</span>' +
+      '<div class="game-list-vibes">' + vibes + '</div>' +
+      '<span class="game-list-meta">' + playersText + '</span>' +
+    '</div>';
+  }).join('');
+
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">×</button>' +
+    '<h3 class="modal-title">' + s.allGamesTitle + ' (' + GAMES.length + ')</h3>' +
+    '<div id="allGamesList">' + rows + '</div>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('allGamesList').querySelectorAll('.game-list-item').forEach((el, i) => {
+    el.addEventListener('click', () => { closeModal(); setTimeout(() => openDescriptionModal(sorted[i]), 60); });
+  });
+  openModalShell();
+}
+
+/* ---------------- language toggle ---------------- */
+document.getElementById('langToggle').addEventListener('click', () => {
+  state.lang = state.lang === 'en' ? 'zh' : 'en';
+  applyLanguage();
+});
+
+function applyLanguage(){
+  const s = STR[state.lang];
+  document.getElementById('htmlRoot').lang = state.lang === 'zh' ? 'zh-Hant' : 'en';
+  document.getElementById('eyebrowText').textContent = s.eyebrow;
+  document.getElementById('titleText').textContent = s.title;
+  document.getElementById('subtitleText').textContent = s.subtitle;
+  document.getElementById('setupTitleText').textContent = s.setupTitle;
+  document.getElementById('playersLabelText').textContent = s.playersLabel;
+  document.getElementById('toolsLabelText').textContent = s.toolsLabel;
+  document.getElementById('toneLabelText').textContent = s.toneLabel;
+  document.getElementById('resetBtn').textContent = s.resetBtn;
+  document.getElementById('findGamesBtnText').textContent = s.findGames;
+  document.getElementById('footerText').textContent = s.footer;
+  document.getElementById('langToggle').textContent = s.langToggleLabel;
+  buildToolChips();
+  buildVibePills();
+  renderRightPanel();
+}
+
+/* ---------------- speech ---------------- */
+function speak(text, lang){
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang; u.rate = 0.95;
+  window.speechSynthesis.speak(u);
+}
+function speakNow(){ speak(arguments[0], state.lang === 'zh' ? 'zh-TW' : 'en-US'); }
+
+/* ---------------- generic modal ---------------- */
+const gameModal = document.getElementById('gameModal');
+const gameModalBox = document.getElementById('gameModalBox');
+let activeBombTimer = null;
+
+function closeModal(){
+  gameModal.classList.add('hidden');
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  if (activeBombTimer){ clearTimeout(activeBombTimer); activeBombTimer = null; }
+  renderBrowseScreen();
+}
+function openModalShell(){ gameModal.classList.remove('hidden'); }
+
+function openGameModal(game){
+  if (game.special === 'mafia') return openMafiaModal(game);
+  if (game.special === 'spy') return openSpyModal(game);
+  if (game.special === 'bomb') return openBombModal(game);
+  if (game.deck === 'storyshare') return openStoryShareModal(game);
+  if (game.deck === 'hotseat') return openHotSeatModal(game);
+  if (game.deck === 'truthdare') return openTruthDareModal(game);
+  if (game.deck === 'versus') return openVersusModal(game);
+  if (game.deck === 'single') return openSingleDeckModal(game);
+  if (game.deck === 'revealone') return openRevealOneModal(game);
+  if (game.deck === 'bingo') return openBingoModal(game);
+  if (game.deck === 'starter') return openStarterModal(game);
+  return openRulesModal(game);
+}
+
+function openRulesModal(game){
+  const s = STR[state.lang];
+  const t = game[state.lang];
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<div class="modal-speak-row"><button class="speak-btn" id="mSpeak" type="button" title="Read aloud">\uD83D\uDD0A</button></div>' +
+    '<h3 class="modal-title">' + t.name + '</h3>' +
+    '<p style="margin-top:-8px;color:var(--ink-soft);font-size:14px;">' + t.tag + '</p>' +
+    '<ol class="rules-steps">' + t.steps.map(st => '<li>' + st + '</li>').join('') + '</ol>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+  bindClose(); 
+  document.getElementById('mSpeak').addEventListener('click', () => speakNow(t.name + '. ' + t.steps.join('. ')));
+  openModalShell();
+}
+function bindClose(){
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  const btn2 = document.getElementById('mCloseBtn');
+  if (btn2) btn2.addEventListener('click', closeModal);
+}
+
+/* ---- Truth or Dare ---- */
+function openTruthDareModal(game){
+  const s = STR[state.lang];
+  let current = null;
+  function draw(kind){
+    const bank = kind === 'truth' ? game.bank.truths : game.bank.dares;
+    current = bank[Math.floor(Math.random() * bank.length)];
+    renderPrompt();
+  }
+  function renderPrompt(){
+    document.getElementById('tdPrompt').textContent = current ? current[state.lang] : s.deckIntro;
+  }
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + game[state.lang].name + '</h3>' +
+    '<div class="deck-prompt" id="tdPrompt">' + s.deckIntro + '</div>' +
+    '<div class="truthdare-buttons">' +
+      '<button class="td-btn truth" id="tdTruth" type="button">' + s.truthLabel + '</button>' +
+      '<button class="td-btn dare" id="tdDare" type="button">' + s.dareLabel + '</button>' +
+    '</div>' +
+    '<div class="modal-speak-row"><button class="speak-btn" id="mSpeak" type="button" title="Read aloud">\uD83D\uDD0A</button></div>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+  bindClose();
+  document.getElementById('tdTruth').addEventListener('click', () => draw('truth'));
+  document.getElementById('tdDare').addEventListener('click', () => draw('dare'));
+  document.getElementById('mSpeak').addEventListener('click', () => { if (current) speakNow(current[state.lang]); });
+  openModalShell();
+}
+
+/* ---- Versus (Would You Rather / Balance Game) ---- */
+function openVersusModal(game){
+  const s = STR[state.lang];
+  let queue = shuffleArray(game.bank);
+  let idx = 0;
+  function renderPair(){
+    if (idx >= queue.length){ queue = shuffleArray(game.bank); idx = 0; }
+    const pair = queue[idx];
+    document.getElementById('vA').textContent = pair.a[state.lang];
+    document.getElementById('vB').textContent = pair.b[state.lang];
+  }
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + game[state.lang].name + '</h3>' +
+    '<div class="versus-row"><div class="versus-option" id="vA"></div><span class="versus-or">' + s.versusOr + '</span><div class="versus-option" id="vB"></div></div>' +
+    '<div class="modal-speak-row"><button class="speak-btn" id="mSpeak" type="button" title="Read aloud">\uD83D\uDD0A</button></div>' +
+    '<button class="modal-btn-primary" id="vNext" type="button">' + s.nextBtn + '</button>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+  bindClose();
+  renderPair();
+  document.getElementById('vNext').addEventListener('click', () => { idx++; renderPair(); });
+  document.getElementById('mSpeak').addEventListener('click', () => {
+    speakNow(document.getElementById('vA').textContent + '... ' + s.versusOr + '... ' + document.getElementById('vB').textContent);
+  });
+  openModalShell();
+}
+
+/* ---- Single-prompt deck (Categories, Never Have I Ever, Image Game) ---- */
+function openSingleDeckModal(game){
+  const s = STR[state.lang];
+  let queue = shuffleArray(game.bank);
+  let idx = 0;
+  function renderItem(){
+    if (idx >= queue.length){ queue = shuffleArray(game.bank); idx = 0; }
+    document.getElementById('sdPrompt').textContent = queue[idx][state.lang];
+  }
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + game[state.lang].name + '</h3>' +
+    '<div class="deck-prompt" id="sdPrompt"></div>' +
+    '<div class="modal-speak-row"><button class="speak-btn" id="mSpeak" type="button" title="Read aloud">\uD83D\uDD0A</button></div>' +
+    '<button class="modal-btn-primary" id="sdNext" type="button">' + s.nextBtn + '</button>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+  bindClose();
+  renderItem();
+  document.getElementById('sdNext').addEventListener('click', () => { idx++; renderItem(); });
+  document.getElementById('mSpeak').addEventListener('click', () => speakNow(document.getElementById('sdPrompt').textContent));
+  openModalShell();
+}
+
+/* ---- Starter generator (Story, Telephone, Paper Telephone, Word Chain) ---- */
+function openStarterModal(game){
+  const s = STR[state.lang];
+  let queue = shuffleArray(game.bank);
+  let idx = 0;
+  function renderItem(){
+    if (idx >= queue.length){ queue = shuffleArray(game.bank); idx = 0; }
+    document.getElementById('stPrompt').textContent = queue[idx][state.lang];
+  }
+  const t = game[state.lang];
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + t.name + '</h3>' +
+    '<div class="deck-prompt" id="stPrompt"></div>' +
+    '<div class="modal-speak-row"><button class="speak-btn" id="mSpeak" type="button" title="Read aloud">\uD83D\uDD0A</button></div>' +
+    '<button class="modal-btn-primary" id="stNext" type="button">' + s.newStarter + '</button>' +
+    '<ol class="rules-steps">' + t.steps.map(st => '<li>' + st + '</li>').join('') + '</ol>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+  bindClose();
+  renderItem();
+  document.getElementById('stNext').addEventListener('click', () => { idx++; renderItem(); });
+  document.getElementById('mSpeak').addEventListener('click', () => speakNow(document.getElementById('stPrompt').textContent));
+  openModalShell();
+}
+
+/* ---- Reveal-one (Sketch & Guess, Forehead Word Guess) ---- */
+function openRevealOneModal(game){
+  const s = STR[state.lang];
+  let queue = shuffleArray(game.bank);
+  let idx = 0, revealed = false;
+  function render(){
+    if (idx >= queue.length){ queue = shuffleArray(game.bank); idx = 0; }
+    const word = queue[idx][state.lang];
+    document.getElementById('roWord').textContent = revealed ? word : '\uD83E\uDD2B';
+    document.getElementById('roWord').classList.toggle('hidden-word', !revealed);
+    document.getElementById('roBtn').textContent = revealed ? STR[state.lang].common.hidePass : STR[state.lang].common.tapReveal;
+  }
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + game[state.lang].name + '</h3>' +
+    '<p class="reveal-hint">' + game.revealHint[state.lang] + '</p>' +
+    '<div class="reveal-word-card" id="roWord"></div>' +
+    '<button class="modal-btn-primary" id="roBtn" type="button"></button>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+  bindClose();
+  render();
+  document.getElementById('roBtn').addEventListener('click', () => {
+    if (!revealed){ revealed = true; render(); }
+    else { idx++; revealed = false; render(); }
+  });
+  openModalShell();
+}
+
+/* ---- Human Bingo ---- */
+function openBingoModal(game){
+  const s = STR[state.lang];
+  let cells = [];
+  function newCard(){
+    const picks = shuffleArray(game.bank).slice(0, 16);
+    cells = picks.map(p => ({ text: p, marked: false }));
+    renderGrid();
+  }
+  function checkBingo(){
+    const lines = [];
+    for (let r = 0; r < 4; r++) lines.push([r*4, r*4+1, r*4+2, r*4+3]);
+    for (let c = 0; c < 4; c++) lines.push([c, c+4, c+8, c+12]);
+    lines.push([0,5,10,15]); lines.push([3,6,9,12]);
+    return lines.some(line => line.every(i => cells[i].marked));
+  }
+  function renderGrid(){
+    const won = checkBingo();
+    document.getElementById('bingoBanner').style.display = won ? 'block' : 'none';
+    document.getElementById('bingoGrid').innerHTML = cells.map((c, i) =>
+      '<div class="bingo-cell' + (c.marked ? ' marked' : '') + '" data-i="' + i + '">' + c.text[state.lang] + '</div>'
+    ).join('');
+    document.getElementById('bingoGrid').querySelectorAll('.bingo-cell').forEach(el => {
+      el.addEventListener('click', () => { cells[+el.dataset.i].marked = !cells[+el.dataset.i].marked; renderGrid(); });
+    });
+  }
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + game[state.lang].name + '</h3>' +
+    '<p class="bingo-banner" id="bingoBanner" style="display:none;">\uD83C\uDF89 ' + s.bingoLabel + '</p>' +
+    '<div class="bingo-grid" id="bingoGrid"></div>' +
+    '<button class="modal-btn-primary" id="bingoNew" type="button">' + s.newCard + '</button>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+  bindClose();
+  newCard();
+  document.getElementById('bingoNew').addEventListener('click', newCard);
+  openModalShell();
+}
+
+/* ---- Who's the Spy ---- */
+let spyState = null;
+function maxSpiesFor(players){ return Math.min(2, Math.max(1, Math.floor(players / 3))); }
+
+function openSpyModal(game){
+  spyState = {
+    game, players: Math.min(Math.max(state.players, game.min), game.max),
+    spies: state.players >= 7 ? 2 : 1, blank: false, pair: null, assignments: [], revealIndex: 0, revealed: false
+  };
+  renderSpySetup();
+  openModalShell();
+}
+
+function renderSpySetup(){
+  const s = STR[state.lang].spy;
+  const c = STR[state.lang];
+  const maxSpies = maxSpiesFor(spyState.players);
+  if (spyState.spies > maxSpies) spyState.spies = maxSpies;
+  const canBlank = (spyState.players - spyState.spies - 1) >= 1;
+  if (!canBlank) spyState.blank = false;
+
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + s.setupTitle + '</h3>' +
+    '<div class="modal-row"><p class="modal-label">' + s.playersLabel + '</p><div class="modal-stepper">' +
+      '<button class="step-btn" id="spP-">\u2013</button><span class="modal-num" id="spPNum">' + spyState.players + '</span><button class="step-btn" id="spP+">+</button>' +
+    '</div></div>' +
+    '<div class="modal-row"><p class="modal-label">' + s.spiesLabel + '</p><div class="modal-stepper">' +
+      '<button class="step-btn" id="spS-">\u2013</button><span class="modal-num" id="spSNum">' + spyState.spies + '</span><button class="step-btn" id="spS+">+</button>' +
+    '</div></div>' +
+    '<div class="modal-row"><div class="toggle-row"><p class="modal-label" style="margin:0;">' + s.blankToggle + '</p>' +
+      '<button class="toggle-btn' + (spyState.blank ? ' on' : '') + '" id="spBlank" ' + (canBlank ? '' : 'disabled') + '></button></div>' +
+      '<p class="toggle-note">' + s.blankNote + '</p></div>' +
+    '<button class="modal-btn-primary" id="spStart" type="button">' + c.startBtn + '</button>';
+
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('spP-').addEventListener('click', () => { spyState.players = Math.max(spyState.game.min, spyState.players - 1); renderSpySetup(); });
+  document.getElementById('spP+').addEventListener('click', () => { spyState.players = Math.min(spyState.game.max, spyState.players + 1); renderSpySetup(); });
+  document.getElementById('spS-').addEventListener('click', () => { spyState.spies = Math.max(1, spyState.spies - 1); renderSpySetup(); });
+  document.getElementById('spS+').addEventListener('click', () => { spyState.spies = Math.min(maxSpiesFor(spyState.players), spyState.spies + 1); renderSpySetup(); });
+  document.getElementById('spBlank').addEventListener('click', () => { if (canBlank){ spyState.blank = !spyState.blank; renderSpySetup(); } });
+  document.getElementById('spStart').addEventListener('click', startSpyRound);
+}
+
+function startSpyRound(){
+  spyState.pair = SPY_WORDS[Math.floor(Math.random() * SPY_WORDS.length)];
+  const seats = shuffleArray(Array.from({length: spyState.players}, (_, i) => i));
+  const spySeats = new Set(seats.slice(0, spyState.spies));
+  const blankSeat = spyState.blank ? seats[spyState.spies] : null;
+  spyState.assignments = Array.from({length: spyState.players}, (_, idx) => {
+    if (spySeats.has(idx)) return 'spy';
+    if (blankSeat === idx) return 'blank';
+    return 'civilian';
+  });
+  spyState.revealIndex = 0; spyState.revealed = false;
+  renderSpyReveal();
+}
+
+function renderSpyReveal(){
+  const s = STR[state.lang].spy, c = STR[state.lang].common;
+  const n = spyState.revealIndex + 1;
+  const role = spyState.assignments[spyState.revealIndex];
+  let word;
+  if (role === 'spy') word = spyState.pair.spy[state.lang];
+  else if (role === 'blank') word = s.blankReveal;
+  else word = spyState.pair.civ[state.lang];
+
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<p class="modal-eyebrow">' + c.categoryLabel + ': ' + spyState.pair.category[state.lang] + '</p>' +
+    '<div class="reveal-pass"><p class="reveal-pass-label">' + c.passLabel + '</p><p class="reveal-pass-name">' + c.playerName(n) + '</p>' +
+      '<div class="reveal-word-card' + (spyState.revealed ? '' : ' hidden-word') + '">' + (spyState.revealed ? word : '\uD83E\uDD2B') + '</div>' +
+      '<button class="modal-btn-primary" id="spRevealBtn" type="button">' + (spyState.revealed ? c.hidePass : c.tapReveal) + '</button>' +
+    '</div>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('spRevealBtn').addEventListener('click', () => {
+    if (!spyState.revealed){ spyState.revealed = true; renderSpyReveal(); }
+    else {
+      spyState.revealIndex++; spyState.revealed = false;
+      if (spyState.revealIndex < spyState.players) renderSpyReveal();
+      else renderSpyPlay();
+    }
+  });
+}
+
+function renderSpyPlay(){
+  const s = STR[state.lang].spy, c = STR[state.lang];
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<p class="modal-eyebrow">' + c.common.categoryLabel + ': ' + spyState.pair.category[state.lang] + '</p>' +
+    '<h3 class="modal-title">' + s.readyTitle + '</h3>' +
+    '<div class="modal-speak-row"><button class="speak-btn" id="spSpeak" type="button" title="Read aloud">\uD83D\uDD0A</button></div>' +
+    '<div class="play-screen-icon">\uD83D\uDD75\uFE0F</div>' +
+    '<p class="play-screen-text" id="spPlayText">' + s.instructions(spyState.spies) + '</p>' +
+    '<button class="modal-btn-primary" id="spRevealAllBtn" type="button">' + s.revealAllBtn + '</button>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + c.closeBtn + '</button>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('spSpeak').addEventListener('click', () => speakNow(document.getElementById('spPlayText').textContent));
+  document.getElementById('spRevealAllBtn').addEventListener('click', renderSpyRevealAll);
+}
+
+function renderSpyRevealAll(){
+  const s = STR[state.lang].spy, c = STR[state.lang].common;
+  const rows = spyState.assignments.map((role, idx) => {
+    let word, roleLabel, roleClass;
+    if (role === 'spy'){ word = spyState.pair.spy[state.lang]; roleLabel = s.spyRole; roleClass = 'role-spy'; }
+    else if (role === 'blank'){ word = s.blankWord; roleLabel = s.blankRole; roleClass = 'role-blank'; }
+    else { word = spyState.pair.civ[state.lang]; roleLabel = s.civilian; roleClass = 'role-civilian'; }
+    return '<li><span>' + c.playerName(idx + 1) + '</span><span class="' + roleClass + '">' + roleLabel + ' \u2014 ' + word + '</span></li>';
+  }).join('');
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + s.revealAllBtn + '</h3>' +
+    '<ul class="reveal-list">' + rows + '</ul>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + STR[state.lang].closeBtn + '</button>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+}
+
+/* ---- Mafia ---- */
+let mafiaState = null;
+function maxMafiaFor(players){ return Math.min(3, Math.max(1, Math.floor(players / 4))); }
+
+function openMafiaModal(game){
+  mafiaState = {
+    game, players: Math.min(Math.max(state.players, game.min), game.max),
+    mafia: state.players >= 10 ? 2 : 1, assignments: [], revealIndex: 0, revealed: false
+  };
+  renderMafiaSetup();
+  openModalShell();
+}
+
+function renderMafiaSetup(){
+  const s = STR[state.lang].mafia, c = STR[state.lang];
+  const maxM = maxMafiaFor(mafiaState.players);
+  if (mafiaState.mafia > maxM) mafiaState.mafia = maxM;
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + s.setupTitle + '</h3>' +
+    '<div class="modal-row"><p class="modal-label">' + s.playersLabel + '</p><div class="modal-stepper">' +
+      '<button class="step-btn" id="mfP-">\u2013</button><span class="modal-num" id="mfPNum">' + mafiaState.players + '</span><button class="step-btn" id="mfP+">+</button>' +
+    '</div></div>' +
+    '<div class="modal-row"><p class="modal-label">' + s.mafiaLabel + '</p><div class="modal-stepper">' +
+      '<button class="step-btn" id="mfM-">\u2013</button><span class="modal-num" id="mfMNum">' + mafiaState.mafia + '</span><button class="step-btn" id="mfM+">+</button>' +
+    '</div></div>' +
+    '<button class="modal-btn-primary" id="mfStart" type="button">' + c.startBtn + '</button>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mfP-').addEventListener('click', () => { mafiaState.players = Math.max(mafiaState.game.min, mafiaState.players - 1); renderMafiaSetup(); });
+  document.getElementById('mfP+').addEventListener('click', () => { mafiaState.players = Math.min(mafiaState.game.max, mafiaState.players + 1); renderMafiaSetup(); });
+  document.getElementById('mfM-').addEventListener('click', () => { mafiaState.mafia = Math.max(1, mafiaState.mafia - 1); renderMafiaSetup(); });
+  document.getElementById('mfM+').addEventListener('click', () => { mafiaState.mafia = Math.min(maxMafiaFor(mafiaState.players), mafiaState.mafia + 1); renderMafiaSetup(); });
+  document.getElementById('mfStart').addEventListener('click', startMafiaRound);
+}
+
+function startMafiaRound(){
+  const seats = shuffleArray(Array.from({length: mafiaState.players}, (_, i) => i));
+  const mafiaSeats = new Set(seats.slice(0, mafiaState.mafia));
+  mafiaState.assignments = Array.from({length: mafiaState.players}, (_, idx) => mafiaSeats.has(idx) ? 'mafia' : 'townsfolk');
+  mafiaState.revealIndex = 0; mafiaState.revealed = false;
+  renderMafiaReveal();
+}
+
+function renderMafiaReveal(){
+  const s = STR[state.lang].mafia, c = STR[state.lang].common;
+  const n = mafiaState.revealIndex + 1;
+  const role = mafiaState.assignments[mafiaState.revealIndex];
+  const label = role === 'mafia' ? s.mafiaRole : s.townsfolk;
+  const flavor = role === 'mafia' ? s.mafiaFlavor : s.townsfolkFlavor;
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<div class="reveal-pass"><p class="reveal-pass-label">' + c.passLabel + '</p><p class="reveal-pass-name">' + c.playerName(n) + '</p>' +
+      '<div class="reveal-word-card' + (mafiaState.revealed ? '' : ' hidden-word') + '">' + (mafiaState.revealed ? (label + '\u2014 ' + flavor) : '\uD83E\uDD2B') + '</div>' +
+      '<button class="modal-btn-primary" id="mfRevealBtn" type="button">' + (mafiaState.revealed ? c.hidePass : c.tapReveal) + '</button>' +
+    '</div>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mfRevealBtn').addEventListener('click', () => {
+    if (!mafiaState.revealed){ mafiaState.revealed = true; renderMafiaReveal(); }
+    else {
+      mafiaState.revealIndex++; mafiaState.revealed = false;
+      if (mafiaState.revealIndex < mafiaState.players) renderMafiaReveal();
+      else renderMafiaPlay();
+    }
+  });
+}
+
+function renderMafiaPlay(){
+  const s = STR[state.lang].mafia, c = STR[state.lang];
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + s.readyTitle + '</h3>' +
+    '<div class="modal-speak-row"><button class="speak-btn" id="mfSpeak" type="button" title="Read aloud">\uD83D\uDD0A</button></div>' +
+    '<div class="play-screen-icon">\uD83D\uDD75\uFE0F</div>' +
+    '<p class="play-screen-text" id="mfPlayText">' + s.instructions(mafiaState.mafia) + '</p>' +
+    '<button class="modal-btn-primary" id="mfRevealAllBtn" type="button">' + s.revealAllBtn + '</button>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + c.closeBtn + '</button>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('mfSpeak').addEventListener('click', () => speakNow(document.getElementById('mfPlayText').textContent));
+  document.getElementById('mfRevealAllBtn').addEventListener('click', renderMafiaRevealAll);
+}
+
+function renderMafiaRevealAll(){
+  const s = STR[state.lang].mafia, c = STR[state.lang].common;
+  const rows = mafiaState.assignments.map((role, idx) => {
+    const label = role === 'mafia' ? s.mafiaRole : s.townsfolk;
+    const cls = role === 'mafia' ? 'role-spy' : 'role-civilian';
+    return '<li><span>' + c.playerName(idx + 1) + '</span><span class="' + cls + '">' + label + '</span></li>';
+  }).join('');
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + s.revealAllBtn + '</h3>' +
+    '<ul class="reveal-list">' + rows + '</ul>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + STR[state.lang].closeBtn + '</button>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+}
+
+/* ---- Hot Potato ---- */
+function openBombModal(game){
+  renderBombSetup(game, 'standard');
+  openModalShell();
+}
+
+function renderBombSetup(game, fuse){
+  const s = STR[state.lang].bomb, c = STR[state.lang];
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<h3 class="modal-title">' + s.setupTitle + '</h3>' +
+    '<div class="modal-row"><p class="modal-label">' + s.fuseLabel + '</p>' +
+      '<div class="fuse-row">' +
+        '<button class="fuse-btn' + (fuse==='quick'?' active':'') + '" data-f="quick">' + s.fuseQuick + '</button>' +
+        '<button class="fuse-btn' + (fuse==='standard'?' active':'') + '" data-f="standard">' + s.fuseStandard + '</button>' +
+        '<button class="fuse-btn' + (fuse==='long'?' active':'') + '" data-f="long">' + s.fuseLong + '</button>' +
+      '</div></div>' +
+    '<button class="modal-btn-primary" id="bombStart" type="button">' + c.startBtn + '</button>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  gameModalBox.querySelectorAll('.fuse-btn').forEach(btn => {
+    btn.addEventListener('click', () => renderBombSetup(game, btn.dataset.f));
+  });
+  document.getElementById('bombStart').addEventListener('click', () => startBomb(game, fuse));
+}
+
+function startBomb(game, fuse){
+  const ranges = { quick:[8,18], standard:[18,35], long:[30,55] };
+  const [lo, hi] = ranges[fuse];
+  const ms = (lo + Math.random() * (hi - lo)) * 1000;
+  const category = CATEGORIES_BANK[Math.floor(Math.random() * CATEGORIES_BANK.length)];
+  renderBombPlay(category);
+  activeBombTimer = setTimeout(() => renderBombExplode(game, fuse), ms);
+}
+
+function renderBombPlay(category){
+  const s = STR[state.lang].bomb, c = STR[state.lang].common;
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<p class="modal-eyebrow">' + c.categoryLabel + '</p>' +
+    '<div class="deck-prompt">' + category[state.lang] + '</div>' +
+    '<div class="bomb-icon">\uD83E\uDDE8</div>' +
+    '<button class="modal-btn-primary" id="bombNext" type="button">' + s.nextPlayer + '</button>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('bombNext').addEventListener('click', (e) => {
+    const icon = document.querySelector('.bomb-icon');
+    if (icon){ icon.style.transition = 'transform .15s'; icon.style.transform = 'scale(1.3)'; setTimeout(() => { icon.style.transform = 'scale(1)'; }, 150); }
+  });
+}
+
+function renderBombExplode(game, fuse){
+  const s = STR[state.lang].bomb, c = STR[state.lang];
+  gameModalBox.innerHTML =
+    '<button class="modal-close" id="mClose" type="button" aria-label="Close">\u00D7</button>' +
+    '<div class="bomb-icon">\uD83D\uDCA5</div>' +
+    '<p class="play-screen-text">' + s.boomText + '</p>' +
+    '<button class="modal-btn-primary" id="bombAgain" type="button">' + s.playAgain + '</button>' +
+    '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + c.closeBtn + '</button>';
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('bombAgain').addEventListener('click', () => renderBombSetup(game, fuse));
+}
+
+/* ---- Story Share (Open Book) ---- */
+function openStoryShareModal(game){
+  const s = STR[state.lang];
+  const ls = s.storyshare;
+  let activeLevel = 'light';
+  let queue = { light: shuffleArray(game.bank.light), personal: shuffleArray(game.bank.personal), deep: shuffleArray(game.bank.deep) };
+  let idx = { light:0, personal:0, deep:0 };
+  function currentQ(){
+    const q = queue[activeLevel];
+    if (idx[activeLevel] >= q.length){ queue[activeLevel] = shuffleArray(game.bank[activeLevel]); idx[activeLevel]=0; }
+    return queue[activeLevel][idx[activeLevel]][state.lang];
+  }
+  function renderModal(){
+    gameModalBox.innerHTML =
+      '<button class="modal-close" id="mClose" type="button">\u00D7</button>' +
+      '<h3 class="modal-title">' + game[state.lang].name + '</h3>' +
+      '<div class="level-tabs">' +
+        '<button class="level-tab light' + (activeLevel==='light'?' active':'') + '" id="tabLight">' + ls.light + '</button>' +
+        '<button class="level-tab personal' + (activeLevel==='personal'?' active':'') + '" id="tabPersonal">' + ls.personal + '</button>' +
+        '<button class="level-tab deep' + (activeLevel==='deep'?' active':'') + '" id="tabDeep">' + ls.deep + '</button>' +
+      '</div>' +
+      '<div class="story-question" id="storyQ">' + currentQ() + '</div>' +
+      '<div class="modal-speak-row"><button class="speak-btn" id="mSpeak" type="button">\uD83D\uDD0A</button></div>' +
+      '<button class="modal-btn-primary" id="storyNext" type="button">' + s.nextBtn + '</button>' +
+      '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+    document.getElementById('mClose').addEventListener('click', closeModal);
+    document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+    ['light','personal','deep'].forEach(level => {
+      document.getElementById('tab' + level.charAt(0).toUpperCase() + level.slice(1)).addEventListener('click', () => { activeLevel = level; renderModal(); });
+    });
+    document.getElementById('storyNext').addEventListener('click', () => { idx[activeLevel]++; document.getElementById('storyQ').textContent = currentQ(); });
+    document.getElementById('mSpeak').addEventListener('click', () => speakNow(document.getElementById('storyQ').textContent));
+  }
+  renderModal();
+  openModalShell();
+}
+
+/* ---- Hot Seat ---- */
+function openHotSeatModal(game){
+  const s = STR[state.lang];
+  const hs = s.hotseat;
+  let playerName = STR[state.lang].common.playerName(1);
+  let hsQ = shuffleArray(game.bank);
+  let qIdx = 0;
+  let playerNum = 1;
+  function nextQ(){
+    if (qIdx >= hsQ.length){ hsQ = shuffleArray(game.bank); qIdx = 0; }
+    document.getElementById('hsQ').textContent = hsQ[qIdx++][state.lang];
+  }
+  function render(){
+    gameModalBox.innerHTML =
+      '<button class="modal-close" id="mClose" type="button">\u00D7</button>' +
+      '<h3 class="modal-title">' + game[state.lang].name + '</h3>' +
+      '<p class="hotseat-subject">\uD83D\uDD25 ' + hs.subjectLabel + ' ' + STR[state.lang].common.playerName(playerNum) + '</p>' +
+      '<div class="hotseat-q" id="hsQ"></div>' +
+      '<div class="modal-speak-row"><button class="speak-btn" id="mSpeak" type="button">\uD83D\uDD0A</button></div>' +
+      '<button class="modal-btn-primary" id="hsNext" type="button">' + s.nextBtn + '</button>' +
+      '<button class="modal-btn-secondary" id="hsRotate" type="button">' + (state.lang === 'zh' ? '\uD83D\uDD04 換下一位' : '\uD83D\uDD04 Next person') + '</button>' +
+      '<button class="modal-btn-secondary" id="mCloseBtn" type="button">' + s.closeBtn + '</button>';
+    document.getElementById('mClose').addEventListener('click', closeModal);
+    document.getElementById('mCloseBtn').addEventListener('click', closeModal);
+    document.getElementById('hsNext').addEventListener('click', nextQ);
+    document.getElementById('hsRotate').addEventListener('click', () => { playerNum = (playerNum % state.players) + 1; render(); nextQ(); });
+    document.getElementById('mSpeak').addEventListener('click', () => speakNow(document.getElementById('hsQ').textContent));
+    nextQ();
+  }
+  render();
+  openModalShell();
+}
+
+/* ---------------- init ---------------- */
+buildToolChips();
+buildVibePills();
+recomputeDeck();
+</script>
+</body>
+</html>
