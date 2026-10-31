@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>誰是臥底</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  /* Layout: one narrow column, one screen per game phase; the secret word sits on a dealt "card". */
+  :root{
+    --pine:#1B3A32; --pine-deep:#142B25; --pine-lift:#24493F;
+    --parchment:#F3ECD9; --parchment-dim:#E7DCBE; --ink:#221F1A; --ink-soft:rgba(34,31,26,.62);
+    --brass:#C99A3B; --brass-bright:#E0B355; --garnet:#B94A37; --sage:#8FB8A2;
+    --muted:rgba(243,236,217,.68); --hair:rgba(243,236,217,.18);
+    --f-display:'Noto Serif TC','Songti TC',serif;
+    --f-body:'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif;
+    --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--pine);
+    background-image:radial-gradient(circle at 15% -10%,rgba(255,255,255,.06),transparent 45%),radial-gradient(circle at 100% 95%,rgba(0,0,0,.22),transparent 50%);
+    color:var(--parchment); font-family:var(--f-body); line-height:1.6; min-height:100vh;
+    padding-block:36px 56px;
+    padding-left:max(16px,env(safe-area-inset-left,0px));
+    padding-right:max(16px,env(safe-area-inset-right,0px));
+  }
+  .wrap{max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+  header{text-align:center;display:flex;flex-direction:column;gap:6px}
+  .eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.2em;color:var(--brass-bright);margin:0;text-transform:uppercase}
+  h1{font-family:var(--f-display);font-weight:900;font-size:40px;line-height:1.1;margin:0;letter-spacing:.06em;text-wrap:balance}
+  h2{font-family:var(--f-display);font-weight:600;font-size:24px;line-height:1.3;margin:0;text-wrap:balance}
+  .sub{color:var(--muted);margin:0;font-size:15px}
+
+  .panel{background:var(--pine-deep);border:1px solid var(--hair);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px}
+  .label{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;color:var(--brass-bright);margin:0}
+
+  .names{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .names label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+  input[type=text]{
+    width:100%;font:inherit;font-size:16px;color:var(--parchment);background:var(--pine-lift);
+    border:1px solid var(--hair);border-radius:8px;padding:9px 11px;
+  }
+  input[type=text]:focus-visible{outline:2px solid var(--brass-bright);outline-offset:1px}
+
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .row .txt{display:flex;flex-direction:column;min-width:0;flex:1}
+  .row .hint{font-size:13px;color:var(--muted)}
+  .seg{display:flex;border:1px solid var(--hair);border-radius:999px;overflow:hidden}
+  .seg button{font:inherit;font-size:14px;background:transparent;color:var(--parchment);border:0;padding:7px 16px;cursor:pointer}
+  .seg button[aria-pressed=true]{background:var(--brass);color:var(--ink);font-weight:700}
+  .seg button:disabled{opacity:.35;cursor:not-allowed}
+
+  .btn{
+    font:inherit;font-weight:700;font-size:17px;border-radius:12px;padding:14px 18px;cursor:pointer;border:0;width:100%;
+    background:var(--brass);color:var(--ink);transition:transform .1s,background .15s;
+  }
+  .btn:hover{background:var(--brass-bright)}
+  .btn:active{transform:scale(.98)}
+  .btn.ghost{background:transparent;color:var(--parchment);border:1px solid var(--hair);font-weight:500}
+  .btn.ghost:hover{background:rgba(243,236,217,.08)}
+  .btn.danger{background:var(--garnet);color:var(--parchment)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn:focus-visible,.seg button:focus-visible,.pick:focus-visible,summary:focus-visible{outline:2px solid var(--brass-bright);outline-offset:2px}
+  .btns{display:flex;flex-direction:column;gap:10px}
+
+  details{border-top:1px solid var(--hair);padding-top:12px}
+  summary{cursor:pointer;color:var(--brass-bright);font-weight:500}
+  details ol{margin:10px 0 0;padding-left:20px;color:var(--muted);font-size:14px;display:flex;flex-direction:column;gap:6px}
+
+  /* the dealt card */
+  .card{
+    background:var(--parchment);color:var(--ink);border-radius:16px;padding:28px 22px;min-height:300px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;
+    box-shadow:0 18px 40px rgba(0,0,0,.35);position:relative;
+    border:2px solid var(--brass);outline:1px solid var(--brass);outline-offset:-10px;
+  }
+  .card.back{background:var(--pine-lift);color:var(--parchment);
+    background-image:repeating-linear-gradient(45deg,rgba(201,154,59,.12) 0 2px,transparent 2px 14px)}
+  .card .seat{font-family:var(--f-mono);font-size:12px;letter-spacing:.2em;color:var(--brass)}
+  .card .who{font-family:var(--f-display);font-weight:900;font-size:34px;line-height:1.2;word-break:break-word}
+  .card .word{font-family:var(--f-display);font-weight:900;font-size:56px;line-height:1.15;letter-spacing:.04em;word-break:break-word}
+  .card .note{font-size:14px;color:var(--ink-soft);max-width:28ch}
+  .card.back .note{color:var(--muted)}
+  .flip{animation:flip .35s ease-out}
+  @keyframes flip{from{transform:rotateY(80deg);opacity:.2}to{transform:none;opacity:1}}
+
+  .progress{display:flex;gap:6px;justify-content:center}
+  .progress i{width:28px;height:4px;border-radius:2px;background:var(--hair)}
+  .progress i.on{background:var(--brass)}
+
+  /* seat list */
+  .seats{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;counter-reset:s}
+  .seats li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;background:var(--pine-lift);min-width:0}
+  .seats .n{font-family:var(--f-mono);font-size:13px;color:var(--brass-bright);width:22px;text-align:center;font-variant-numeric:tabular-nums}
+  .seats .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+  .seats li.first{outline:1px solid var(--brass)}
+  .tag{font-size:12px;border-radius:999px;padding:2px 9px;border:1px solid var(--hair);color:var(--muted);white-space:nowrap}
+  .tag.spy{border-color:var(--garnet);color:#F0A493}
+  .tag.civ{border-color:var(--sage);color:var(--sage)}
+  .tag.blank{border-color:var(--brass);color:var(--brass-bright)}
+  .tag.go{background:var(--brass);color:var(--ink);border-color:var(--brass)}
+  .out-list{display:flex;flex-wrap:wrap;gap:8px}
+  .out-list .tag s{opacity:.8}
+
+  .pick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pick{font:inherit;font-size:16px;padding:16px 10px;border-radius:12px;background:var(--pine-lift);color:var(--parchment);
+    border:1px solid var(--hair);cursor:pointer;overflow-wrap:anywhere}
+  .pick[aria-pressed=true]{background:var(--garnet);border-color:var(--garnet);font-weight:700}
+
+  .verdict{font-family:var(--f-display);font-weight:900;font-size:32px;text-align:center;margin:0;line-height:1.25}
+  .verdict.spy{color:#F0A493}.verdict.civ{color:var(--sage)}
+  .center{text-align:center}
+  .muted{color:var(--muted);font-size:14px;margin:0}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  td,th{padding:9px 6px;border-bottom:1px solid var(--hair);text-align:left}
+  th{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--brass-bright);font-weight:500}
+  td.w{font-family:var(--f-display);font-weight:600}
+  tr.dead td.nm{color:var(--muted);text-decoration:line-through}
+  .words{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:center}
+  .words div{background:var(--pine-lift);border-radius:10px;padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+  .words b{font-family:var(--f-display);font-size:24px}
+  footer{text-align:center;color:var(--muted);font-size:12px}
+  @media (prefers-reduced-motion:reduce){.flip{animation:none}.btn{transition:none}}
+</style>
+</head>
+<body>
+<main class="wrap" id="app" aria-live="polite"></main>
+
+<script>
+/* ---------------- 詞庫：[平民詞, 臥底詞]，開局時隨機互換 ---------------- */
+const WORDS = [
+  ['咖啡','奶茶'],['西瓜','哈密瓜'],['火鍋','燒烤'],['早餐','早午餐'],['珍珠奶茶','椰果奶茶'],
+  ['滷肉飯','雞肉飯'],['臭豆腐','麻辣鴨血'],['小籠包','水煎包'],['蛋餅','蘿蔔糕'],['鳳梨酥','太陽餅'],
+  ['可樂','汽水'],['巧克力','焦糖'],['冰淇淋','雪花冰'],['泡麵','義大利麵'],['壽司','生魚片'],
+  ['貓','狗'],['老虎','獅子'],['企鵝','海豹'],['蝴蝶','蜜蜂'],['鯊魚','海豚'],['兔子','倉鼠'],
+  ['海邊','游泳池'],['圖書館','書店'],['公車','捷運'],['飯店','民宿'],['夜市','百貨公司'],
+  ['電影院','KTV'],['便利商店','超市'],['高鐵','飛機'],['醫院','診所'],['動物園','水族館'],
+  ['雨傘','雨衣'],['手機','平板'],['吉他','烏克麗麗'],['枕頭','抱枕'],['牙刷','牙線'],
+  ['眼鏡','隱形眼鏡'],['口紅','唇膏'],['耳機','喇叭'],['鬧鐘','手錶'],['拖鞋','涼鞋'],
+  ['醫生','護理師'],['老師','教授'],['警察','保全'],['廚師','麵包師傅'],['歌手','演員'],
+  ['籃球','排球'],['游泳','潛水'],['跑步','健走'],['瑜伽','皮拉提斯'],['羽毛球','網球'],
+  ['情人節','七夕'],['過年','中秋節'],['婚禮','畢業典禮'],['萬聖節','聖誕節'],['生日蛋糕','月餅'],
+  ['哈利波特','魔戒'],['Instagram','Facebook'],['YouTube','Netflix'],['麥當勞','肯德基'],['LINE','Messenger']
+];
+
+const N = 6;
+const DEFAULT_NAMES = Array.from({length:N},(_,i)=>'玩家 '+(i+1));
+const ROLE_TXT = {civ:'平民', spy:'臥底', blank:'白板'};
+
+function load(k,d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+let S = {
+  phase:'setup',
+  names: load('wsd.names', DEFAULT_NAMES.slice()),
+  spies: 1, blank: false,
+  players: [], civWord:'', spyWord:'',
+  deal: 0, shown: false,
+  round: 1, startSeat: 0, tie: false,
+  pick: null, lastOut: null, peek: null, peekShown: false,
+  used: []
+};
+if (!Array.isArray(S.names) || S.names.length !== N) S.names = DEFAULT_NAMES.slice();
+
+const app = document.getElementById('app');
+const alive = () => S.players.filter(p=>p.alive);
+
+/* ---------------- game logic ---------------- */
+function newGame(){
+  let pool = WORDS.map((_,i)=>i).filter(i=>!S.used.includes(i));
+  if (!pool.length){ S.used = []; pool = WORDS.map((_,i)=>i); }
+  const idx = pool[Math.floor(Math.random()*pool.length)];
+  S.used.push(idx);
+  const pair = Math.random() < .5 ? WORDS[idx] : WORDS[idx].slice().reverse();
+  S.civWord = pair[0]; S.spyWord = pair[1];
+
+  const seats = shuffle([...Array(N).keys()]);
+  const spySeats = seats.slice(0, S.spies);
+  const blankSeat = S.blank ? seats[S.spies] : -1;
+  S.players = S.names.map((name,i)=>{
+    const role = spySeats.includes(i) ? 'spy' : (i===blankSeat ? 'blank' : 'civ');
+    return { seat:i, name: name.trim() || DEFAULT_NAMES[i], role, alive:true,
+             word: role==='civ' ? S.civWord : role==='spy' ? S.spyWord : '' };
+  });
+  S.deal = 0; S.shown = false; S.round = 1; S.tie = false; S.pick = null; S.lastOut = null;
+  S.phase = 'deal';
+}
+
+function pickStartSeat(){
+  // 隨機從一位存活玩家開始；第一輪不讓白板第一個發言
+  let cands = alive();
+  if (S.round === 1){ const nb = cands.filter(p=>p.role!=='blank'); if (nb.length) cands = nb; }
+  S.startSeat = cands[Math.floor(Math.random()*cands.length)].seat;
+}
+
+function speakingOrder(){
+  const out = [];
+  for (let k=0;k<N;k++){ const p = S.players[(S.startSeat+k)%N]; if (p.alive) out.push(p); }
+  return out;
+}
+
+function winner(){
+  const a = alive();
+  const bad = a.filter(p=>p.role!=='civ').length;
+  const civ = a.length - bad;
+  if (bad === 0) return 'civ';
+  if (civ <= bad || a.length <= 3) return 'spy';
+  return null;
+}
+
+/* ---------------- screens ---------------- */
+const head = (eyebrow, title, sub) =>
+  `<header><p class="eyebrow">${eyebrow}</p><h1>${title}</h1>${sub?`<p class="sub">${sub}</p>`:''}</header>`;
+
+function vSetup(){
+  const canBlank = S.spies === 1;
+  if (!canBlank) S.blank = false;
+  const civCount = N - S.spies - (S.blank?1:0);
+  return head('六人派對 · 一支手機輪流傳','誰是臥底','五個人拿到同一個詞，有人拿到很像但不一樣的詞。用一句話描述，把他揪出來。') + `
+  <section class="panel">
+    <p class="label">座位順序（順時針）</p>
+    <div class="names">
+      ${S.names.map((n,i)=>`<label for="nm${i}">${i+1} 號位<input type="text" id="nm${i}" data-i="${i}" maxlength="10" value="${esc(n)}" autocomplete="off"></label>`).join('')}
+    </div>
+  </section>
+  <section class="panel">
+    <div class="row"><div class="txt"><b>臥底人數</b><span class="hint">六人局建議 1 位</span></div>
+      <div class="seg" role="group" aria-label="臥底人數">
+        <button type="button" id="sp1" aria-pressed="${S.spies===1}">1</button>
+        <button type="button" id="sp2" aria-pressed="${S.spies===2}">2</button>
+      </div></div>
+    <div class="row"><div class="txt"><b>加入白板</b><span class="hint">${canBlank?'有一人拿不到詞，要靠聽別人的描述混過去':'2 位臥底時不能加白板'}</span></div>
+      <div class="seg" role="group" aria-label="加入白板">
+        <button type="button" id="bk0" aria-pressed="${!S.blank}">不要</button>
+        <button type="button" id="bk1" aria-pressed="${S.blank}" ${canBlank?'':'disabled'}>要</button>
+      </div></div>
+    <p class="muted">這局：平民 ${civCount} 人、臥底 ${S.spies} 人${S.blank?'、白板 1 人':''}</p>
+    <details>
+      <summary>怎麼玩</summary>
+      <ol>
+        <li>手機依座位傳下去，每人偷偷看自己的詞。你不會知道自己是平民還是臥底。</li>
+        <li>從指定的人開始順時針，每人用一句話描述自己的詞，不能直接說出詞。</li>
+        <li>一輪說完，大家同時指向最可疑的人，票最多的出局，並公開身分。平票的人各補充一句再投。</li>
+        <li>臥底全部出局，平民獲勝。臥底撐到只剩 3 人，或人數追平平民，臥底獲勝（白板算臥底陣營）。</li>
+      </ol>
+    </details>
+  </section>
+  <button class="btn" id="go">發詞，開始</button>`;
+}
+
+function vDeal(){
+  const p = S.players[S.deal];
+  const prog = `<div class="progress" aria-label="發詞進度 ${S.deal+1}/${N}">${S.players.map((_,i)=>`<i class="${i<=S.deal?'on':''}"></i>`).join('')}</div>`;
+  if (!S.shown) return head('發詞 · '+(S.deal+1)+' / '+N,'把手機交給') + prog + `
+    <div class="card back"><span class="seat">${p.seat+1} 號位</span><span class="who">${esc(p.name)}</span>
+      <span class="note">確認旁邊沒人偷看，再點下面的按鈕。</span></div>
+    <button class="btn" id="show">我是 ${esc(p.name)}，看我的詞</button>`;
+  const body = p.role==='blank'
+    ? `<span class="seat">你是白板</span><span class="word">？</span><span class="note">你沒有拿到詞。仔細聽別人怎麼描述，猜出大家的詞，然後裝作你也有。</span>`
+    : `<span class="seat">${esc(p.name)} 的詞</span><span class="word">${esc(p.word)}</span><span class="note">記住它，別讓表情出賣你。</span>`;
+  return head('發詞 · '+(S.deal+1)+' / '+N,'只有你能看') + prog + `
+    <div class="card flip">${body}</div>
+    <button class="btn" id="hide">${S.deal < N-1 ? '記住了，蓋起來交給下一位' : '記住了，開始遊戲'}</button>`;
+}
+
+function outTags(){
+  const dead = S.players.filter(p=>!p.alive);
+  if (!dead.length) return '';
+  return `<div class="row"><span class="label">已出局</span></div><div class="out-list">${dead.map(p=>`<span class="tag ${p.role}"><s>${esc(p.name)}</s> · ${ROLE_TXT[p.role]}</span>`).join('')}</div>`;
+}
+
+function vPlay(){
+  const order = speakingOrder();
+  return head('第 '+S.round+' 輪 · 剩 '+alive().length+' 人','輪流描述',
+    S.tie ? '剛才平票。平票的人各再補充一句，然後重新投票。' : '從標記的人開始，順時針每人說一句。不能說出詞本身，也不能用諧音或外語。') + `
+  <section class="panel">
+    <p class="label">發言順序</p>
+    <ol class="seats">${order.map((p,k)=>`<li class="${k===0?'first':''}"><span class="n">${k+1}</span><span class="nm">${esc(p.name)}</span>${k===0?'<span class="tag go">先說</span>':''}</li>`).join('')}</ol>
+    ${outTags()}
+  </section>
+  <div class="btns">
+    <button class="btn" id="tovote">大家說完了，開始投票</button>
+    <button class="btn ghost" id="peek">有人忘記自己的詞</button>
+  </div>`;
+}
+
+function vPeek(){
+  if (S.peek === null) return head('偷看一下','誰忘記了？','其他人先把頭轉開。') + `
+    <div class="pick-grid">${alive().map(p=>`<button class="pick" data-peek="${p.seat}">${esc(p.name)}</button>`).join('')}</div>
+    <button class="btn ghost" id="back">取消</button>`;
+  const p = S.players[S.peek];
+  if (!S.peekShown) return head('偷看一下','把手機交給') + `
+    <div class="card back"><span class="who">${esc(p.name)}</span><span class="note">只有本人可以看。</span></div>
+    <button class="btn" id="pshow">我是 ${esc(p.name)}，看我的詞</button>`;
+  return head('偷看一下','只有你能看') + `
+    <div class="card flip">${p.role==='blank'
+      ? `<span class="seat">你是白板</span><span class="word">？</span>`
+      : `<span class="seat">${esc(p.name)} 的詞</span><span class="word">${esc(p.word)}</span>`}</div>
+    <button class="btn" id="back">蓋起來，回到遊戲</button>`;
+}
+
+function vVote(){
+  const sel = S.pick !== null ? S.players[S.pick] : null;
+  return head('第 '+S.round+' 輪 · 投票','誰最可疑？','數到三，大家同時指向一個人。選出票數最多的那位。') + `
+  <div class="pick-grid">${alive().map(p=>`<button class="pick" data-pick="${p.seat}" aria-pressed="${S.pick===p.seat}">${esc(p.name)}</button>`).join('')}</div>
+  <div class="btns">
+    <button class="btn danger" id="kick" ${sel?'':'disabled'}>${sel ? '淘汰 '+esc(sel.name) : '先選一個人'}</button>
+    <button class="btn ghost" id="tie">平票，再說一輪</button>
+    <button class="btn ghost" id="back">回到發言</button>
+  </div>`;
+}
+
+function vOut(){
+  const p = S.lastOut, w = winner();
+  const isCiv = p.role === 'civ';
+  return head('第 '+S.round+' 輪結果', esc(p.name)+' 出局') + `
+  <div class="card flip">
+    <span class="seat">身分揭曉</span>
+    <span class="word" style="color:${isCiv?'var(--pine)':'var(--garnet)'}">${ROLE_TXT[p.role]}</span>
+    <span class="note">${isCiv ? '抓錯人了，臥底還在你們之中。' : p.role==='spy' ? '抓到一位臥底！' : '白板被抓到了。'}</span>
+  </div>
+  <p class="muted center">詞先保密，遊戲結束時一起公開。</p>
+  <button class="btn" id="next">${w ? '看最後結果' : '進入第 '+(S.round+1)+' 輪'}</button>`;
+}
+
+function vEnd(){
+  const w = winner();
+  return head('遊戲結束', w==='civ' ? '平民獲勝' : '臥底獲勝',
+    w==='civ' ? '所有臥底都被揪出來了。' : '臥底成功混到最後。') + `
+  <section class="panel">
+    <div class="words"><div><span class="label">平民的詞</span><b>${esc(S.civWord)}</b></div><div><span class="label">臥底的詞</span><b>${esc(S.spyWord)}</b></div></div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>玩家</th><th>身分</th><th>詞</th></tr></thead>
+      <tbody>${S.players.map(p=>`<tr class="${p.alive?'':'dead'}"><td class="nm">${esc(p.name)}</td><td><span class="tag ${p.role}">${ROLE_TXT[p.role]}</span></td><td class="w">${p.role==='blank'?'—':esc(p.word)}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <p class="muted">劃線的是被淘汰的玩家。</p>
+  </section>
+  <div class="btns">
+    <button class="btn" id="again">同一組人，再來一局</button>
+    <button class="btn ghost" id="setup">換玩家或改設定</button>
+  </div>`;
+}
+
+/* ---------------- render + events ---------------- */
+function render(){
+  const v = {setup:vSetup, deal:vDeal, play:vPlay, peek:vPeek, vote:vVote, out:vOut, end:vEnd}[S.phase];
+  app.innerHTML = v() + '<footer>一支手機，六個人，傳著玩。</footer>';
+  window.scrollTo(0,0);
+}
+
+const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+
+app.addEventListener('input', e=>{
+  const i = e.target.dataset && e.target.dataset.i;
+  if (i !== undefined){ S.names[+i] = e.target.value; save('wsd.names', S.names); }
+});
+
+app.addEventListener('click', e=>{
+  const t = e.target.closest('button'); if (!t) return;
+  const id = t.id, d = t.dataset;
+  if (id==='sp1'){ S.spies=1; }
+  else if (id==='sp2'){ S.spies=2; }
+  else if (id==='bk0'){ S.blank=false; }
+  else if (id==='bk1'){ S.blank=true; }
+  else if (id==='go' || id==='again'){ newGame(); }
+  else if (id==='show'){ S.shown=true; }
+  else if (id==='hide'){
+    if (S.deal < N-1){ S.deal++; S.shown=false; }
+    else { pickStartSeat(); S.phase='play'; }
+  }
+  else if (id==='tovote'){ S.pick=null; S.phase='vote'; }
+  else if (id==='peek'){ S.peek=null; S.peekShown=false; S.phase='peek'; }
+  else if (d.peek !== undefined){ S.peek=+d.peek; }
+  else if (id==='pshow'){ S.peekShown=true; }
+  else if (id==='back'){ S.phase='play'; }
+  else if (d.pick !== undefined){ S.pick=+d.pick; }
+  else if (id==='tie'){ S.tie=true; S.phase='play'; }
+  else if (id==='kick' && S.pick!==null){
+    const p = S.players[S.pick]; p.alive=false; S.lastOut=p; S.tie=false; S.phase='out';
+  }
+  else if (id==='next'){
+    if (winner()) S.phase='end';
+    else { S.round++; pickStartSeat(); S.phase='play'; }
+  }
+  else if (id==='setup'){ S.phase='setup'; }
+  else return;
+  render();
+});
+
+/* 讓頁面更新時保留進行中的局 */
+window.claude?.hot?.snapshot?.(()=>{ const c = JSON.parse(JSON.stringify(S)); if (c.lastOut) c.lastOut = c.lastOut.seat; return c; });
+function start(saved){
+  if (saved && saved.phase){
+    Object.assign(S, saved);
+    if (typeof S.lastOut === 'number') S.lastOut = S.players[S.lastOut];
+  }
+  render();
+}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+</body>
+</html>
